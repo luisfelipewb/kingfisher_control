@@ -1,0 +1,11 @@
+<launch>
+
+  <arg name="experiment_name" default="default_experiment"/>
+
+  <node pkg="kingfisher_sid" type="sequence_runner.py" name="sequence_runner" output="screen">
+    <remap from="cmd" to="cmd_drive"/>
+    <remap from="odom" to="pose_gt"/>
+    <param name="experiment_name" value="$(arg experiment_name)"/>
+  </node>
+
+</launch>
