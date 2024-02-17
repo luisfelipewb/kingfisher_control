@@ -12,6 +12,20 @@
   - duration: 10.0
     tl: 0.0
     tr: 0.0
+- experiment_name: acceleration_0.9
+  sections:
+  - duration: 5.0
+    tl: 0.0
+    tr: 0.0
+  - duration: 10.0
+    tl: 0.9
+    tr: 0.9
+  - duration: 20.0
+    tl: 0.9
+    tr: 0.9
+  - duration: 10.0
+    tl: 0.0
+    tr: 0.0
 - experiment_name: acceleration_0.8
   sections:
   - duration: 5.0
@@ -23,6 +37,20 @@
   - duration: 20.0
     tl: 0.8
     tr: 0.8
+  - duration: 10.0
+    tl: 0.0
+    tr: 0.0
+- experiment_name: acceleration_0.7
+  sections:
+  - duration: 5.0
+    tl: 0.0
+    tr: 0.0
+  - duration: 10.0
+    tl: 0.7
+    tr: 0.7
+  - duration: 20.0
+    tl: 0.7
+    tr: 0.7
   - duration: 10.0
     tl: 0.0
     tr: 0.0
@@ -40,17 +68,17 @@
   - duration: 10.0
     tl: 0.0
     tr: 0.0
-- experiment_name: acceleration_0.4
+- experiment_name: acceleration_0.5
   sections:
   - duration: 5.0
     tl: 0.0
     tr: 0.0
   - duration: 10.0
-    tl: 0.4
-    tr: 0.4
+    tl: 0.5
+    tr: 0.5
   - duration: 20.0
-    tl: 0.4
-    tr: 0.4
+    tl: 0.5
+    tr: 0.5
   - duration: 10.0
     tl: 0.0
     tr: 0.0
@@ -68,6 +96,20 @@
   - duration: 10.0
     tl: 0.0
     tr: 0.0
+- experiment_name: rotation_0.9
+  sections:
+  - duration: 5.0
+    tl: 0.0
+    tr: 0.0
+  - duration: 10.0
+    tl: 0.5456
+    tr: -0.9
+  - duration: 20.0
+    tl: 0.5456
+    tr: -0.9
+  - duration: 10.0
+    tl: 0.0
+    tr: 0.0
 - experiment_name: rotation_0.8
   sections:
   - duration: 5.0
@@ -79,6 +121,20 @@
   - duration: 20.0
     tl: 0.519
     tr: -0.8
+  - duration: 10.0
+    tl: 0.0
+    tr: 0.0
+- experiment_name: rotation_0.7
+  sections:
+  - duration: 5.0
+    tl: 0.0
+    tr: 0.0
+  - duration: 10.0
+    tl: 0.4857
+    tr: -0.7
+  - duration: 20.0
+    tl: 0.4857
+    tr: -0.7
   - duration: 10.0
     tl: 0.0
     tr: 0.0
@@ -104,9 +160,79 @@
   - duration: 10.0
     tl: 0.0
     tr: 1.0
-  - duration: 20.0
+  - duration: 40
     tl: 0.0
     tr: 1.0
+  - duration: 10.0
+    tl: 0.0
+    tr: 0.0
+- experiment_name: circle_left_0.9
+  sections:
+  - duration: 5.0
+    tl: 0.0
+    tr: 0.0
+  - duration: 10.0
+    tl: 0.0
+    tr: 0.9
+  - duration: 40
+    tl: 0.0
+    tr: 0.9
+  - duration: 10.0
+    tl: 0.0
+    tr: 0.0
+- experiment_name: circle_left_0.8
+  sections:
+  - duration: 5.0
+    tl: 0.0
+    tr: 0.0
+  - duration: 10.0
+    tl: 0.0
+    tr: 0.8
+  - duration: 40
+    tl: 0.0
+    tr: 0.8
+  - duration: 10.0
+    tl: 0.0
+    tr: 0.0
+- experiment_name: circle_left_0.7
+  sections:
+  - duration: 5.0
+    tl: 0.0
+    tr: 0.0
+  - duration: 10.0
+    tl: 0.0
+    tr: 0.7
+  - duration: 40
+    tl: 0.0
+    tr: 0.7
+  - duration: 10.0
+    tl: 0.0
+    tr: 0.0
+- experiment_name: circle_left_0.6
+  sections:
+  - duration: 5.0
+    tl: 0.0
+    tr: 0.0
+  - duration: 10.0
+    tl: 0.0
+    tr: 0.6
+  - duration: 40
+    tl: 0.0
+    tr: 0.6
+  - duration: 10.0
+    tl: 0.0
+    tr: 0.0
+- experiment_name: circle_left_0.5
+  sections:
+  - duration: 5.0
+    tl: 0.0
+    tr: 0.0
+  - duration: 10.0
+    tl: 0.0
+    tr: 0.5
+  - duration: 40
+    tl: 0.0
+    tr: 0.5
   - duration: 10.0
     tl: 0.0
     tr: 0.0
@@ -118,8 +244,78 @@
   - duration: 10.0
     tl: 1.0
     tr: 0.0
-  - duration: 20.0
+  - duration: 40
     tl: 1.0
+    tr: 0.0
+  - duration: 10.0
+    tl: 0.0
+    tr: 0.0
+- experiment_name: circle_right_0.9
+  sections:
+  - duration: 5.0
+    tl: 0.0
+    tr: 0.0
+  - duration: 10.0
+    tl: 0.9
+    tr: 0.0
+  - duration: 40
+    tl: 0.9
+    tr: 0.0
+  - duration: 10.0
+    tl: 0.0
+    tr: 0.0
+- experiment_name: circle_right_0.8
+  sections:
+  - duration: 5.0
+    tl: 0.0
+    tr: 0.0
+  - duration: 10.0
+    tl: 0.8
+    tr: 0.0
+  - duration: 40
+    tl: 0.8
+    tr: 0.0
+  - duration: 10.0
+    tl: 0.0
+    tr: 0.0
+- experiment_name: circle_right_0.7
+  sections:
+  - duration: 5.0
+    tl: 0.0
+    tr: 0.0
+  - duration: 10.0
+    tl: 0.7
+    tr: 0.0
+  - duration: 40
+    tl: 0.7
+    tr: 0.0
+  - duration: 10.0
+    tl: 0.0
+    tr: 0.0
+- experiment_name: circle_right_0.6
+  sections:
+  - duration: 5.0
+    tl: 0.0
+    tr: 0.0
+  - duration: 10.0
+    tl: 0.6
+    tr: 0.0
+  - duration: 40
+    tl: 0.6
+    tr: 0.0
+  - duration: 10.0
+    tl: 0.0
+    tr: 0.0
+- experiment_name: circle_right_0.5
+  sections:
+  - duration: 5.0
+    tl: 0.0
+    tr: 0.0
+  - duration: 10.0
+    tl: 0.5
+    tr: 0.0
+  - duration: 40
+    tl: 0.5
     tr: 0.0
   - duration: 10.0
     tl: 0.0
@@ -159,129 +355,38 @@
   - duration: 10.0
     tl: 0.0
     tr: 0.0
-- experiment_name: acceleration_0.9
-  sections:
-  - duration: 5.0
-    tl: 0.0
-    tr: 0.0
-  - duration: 10.0
-    tl: 0.9
-    tr: 0.9
-  - duration: 20.0
-    tl: 0.9
-    tr: 0.9
-  - duration: 10.0
-    tl: 0.0
-    tr: 0.0
-- experiment_name: acceleration_0.7
-  sections:
-  - duration: 5.0
-    tl: 0.0
-    tr: 0.0
-  - duration: 10.0
-    tl: 0.7
-    tr: 0.7
-  - duration: 20.0
-    tl: 0.7
-    tr: 0.7
-  - duration: 10.0
-    tl: 0.0
-    tr: 0.0
-- experiment_name: acceleration_0.5
-  sections:
-  - duration: 5.0
-    tl: 0.0
-    tr: 0.0
-  - duration: 10.0
-    tl: 0.5
-    tr: 0.5
-  - duration: 20.0
-    tl: 0.5
-    tr: 0.5
-  - duration: 10.0
-    tl: 0.0
-    tr: 0.0
-- experiment_name: rotation_0.9
-  sections:
-  - duration: 5.0
-    tl: 0.0
-    tr: 0.0
-  - duration: 10.0
-    tl: 0.5456
-    tr: -0.9
-  - duration: 20.0
-    tl: 0.5456
-    tr: -0.9
-  - duration: 10.0
-    tl: 0.0
-    tr: 0.0
-- experiment_name: rotation_0.7
-  sections:
-  - duration: 5.0
-    tl: 0.0
-    tr: 0.0
-  - duration: 10.0
-    tl: 0.4857
-    tr: -0.7
-  - duration: 20.0
-    tl: 0.4857
-    tr: -0.7
-  - duration: 10.0
-    tl: 0.0
-    tr: 0.0
-- experiment_name: circle_left_0.8
-  sections:
-  - duration: 5.0
-    tl: 0.0
-    tr: 0.0
-  - duration: 10.0
-    tl: 0.0
-    tr: 0.8
-  - duration: 20.0
-    tl: 0.0
-    tr: 0.8
-  - duration: 10.0
-    tl: 0.0
-    tr: 0.0
-- experiment_name: circle_right_0.8
+- experiment_name: zigzag_0.8
   sections:
   - duration: 5.0
     tl: 0.0
     tr: 0.0
   - duration: 10.0
     tl: 0.8
-    tr: 0.0
-  - duration: 20.0
+    tr: 0.8
+  - duration: 3.0
     tl: 0.8
     tr: 0.0
-  - duration: 10.0
+  - duration: 3.0
     tl: 0.0
+    tr: 0.8
+  - duration: 3.0
+    tl: 0.8
     tr: 0.0
-- experiment_name: circle_left_0.6
-  sections:
-  - duration: 5.0
+  - duration: 3.0
     tl: 0.0
+    tr: 0.8
+  - duration: 3.0
+    tl: 0.8
     tr: 0.0
-  - duration: 10.0
+  - duration: 3.0
     tl: 0.0
-    tr: 0.6
-  - duration: 20.0
+    tr: 0.8
+  - duration: 3.0
+    tl: 0.8
+    tr: 0.0
+  - duration: 3.0
     tl: 0.0
-    tr: 0.6
-  - duration: 10.0
-    tl: 0.0
-    tr: 0.0
-- experiment_name: circle_right_0.6
-  sections:
-  - duration: 5.0
-    tl: 0.0
-    tr: 0.0
-  - duration: 10.0
-    tl: 0.6
-    tr: 0.0
-  - duration: 20.0
-    tl: 0.6
-    tr: 0.0
+    tr: 0.8
   - duration: 10.0
     tl: 0.0
     tr: 0.0
@@ -324,41 +429,6 @@
   - duration: 20.0
     tl: -0.6
     tr: -0.6
-  - duration: 10.0
-    tl: 0.0
-    tr: 0.0
-- experiment_name: zigzag_0.6
-  sections:
-  - duration: 5.0
-    tl: 0.0
-    tr: 0.0
-  - duration: 10.0
-    tl: 0.6
-    tr: 0.6
-  - duration: 3.0
-    tl: 0.6
-    tr: 0.0
-  - duration: 3.0
-    tl: 0.0
-    tr: 0.6
-  - duration: 3.0
-    tl: 0.6
-    tr: 0.0
-  - duration: 3.0
-    tl: 0.0
-    tr: 0.6
-  - duration: 3.0
-    tl: 0.6
-    tr: 0.0
-  - duration: 3.0
-    tl: 0.0
-    tr: 0.6
-  - duration: 3.0
-    tl: 0.6
-    tr: 0.0
-  - duration: 3.0
-    tl: 0.0
-    tr: 0.6
   - duration: 10.0
     tl: 0.0
     tr: 0.0
