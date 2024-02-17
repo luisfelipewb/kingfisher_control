@@ -196,7 +196,7 @@ for acc in accelerations:
 
 # Write the experiments to the yaml file
 rospack = rospkg.RosPack()
-package_path = rospack.get_path('test_rl')  # Replace 'your_package_name' with the name of your package
+package_path = rospack.get_path('kingfisher_sid')  # Replace 'your_package_name' with the name of your package
 config_path = package_path+'/config/experiments.yaml'  # Assuming the file is in the 'config' directory
 
 with open(config_path, 'w') as file:
