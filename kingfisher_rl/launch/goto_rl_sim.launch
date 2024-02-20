@@ -1,0 +1,13 @@
+<launch>
+
+   <node pkg="kingfisher_rl" type="goto_rl.py" name="goto_rl" output="screen">
+    <remap from="~goal" to="/move_base_simple/goal"/>
+    <remap from="~cmd_drive" to="/cmd_drive"/>
+    <remap from="~odom" to="/pose_gt"/>
+    <remap from="~rl_status" to="/rl_status"/>
+
+    <param name="config" value="test.yaml"/>
+    <param name="policy" value="test.pth"/>
+  </node>
+
+</launch>
