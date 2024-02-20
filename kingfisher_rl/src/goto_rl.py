@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import rospy
-from geometry_msgs.msg import TwistStamped, PoseStamped
+from geometry_msgs.msg import TwistStamped, PoseStamped, Twist, Vector3Stamped
 from std_msgs.msg import Bool
 from nav_msgs.msg import Odometry
 from heron_msgs.msg import Drive
@@ -32,7 +32,7 @@ class GoTo:
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(5.0))
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         
-        self.dist_threshold = 1.0
+        self.dist_threshold = 0.2
 
         config_folder = rospkg.RosPack().get_path('kingfisher_rl') + "/config/"
     
@@ -43,15 +43,13 @@ class GoTo:
         self.rl_policy_path=config_folder+rl_policy
         self.device = 'cuda'
 
-        num_obs = 10 
+        num_obs = 11
         max_actions = 2
 
         with open(self.rl_config_path, 'r') as stream:
             self.cfg = yaml.safe_load(stream)
         
-        observation_space = spaces.Dict({"state":spaces.Box(np.ones(num_obs) * -np.Inf, np.ones(num_obs) * np.Inf),
-                                              "transforms":spaces.Box(low=-1, high=1, shape=(max_actions, 5)),
-                                              "masks":spaces.Box(low=0, high=1, shape=(max_actions,))})
+        observation_space = spaces.Dict({"state":spaces.Box(np.ones(num_obs) * -np.Inf, np.ones(num_obs) * np.Inf)})
         
         action_space = spaces.Box(low=np.array([-1.0, -1.0]), high=np.array([1.0, 1.0]), dtype=np.float32)
         
@@ -70,7 +68,6 @@ class GoTo:
 
         #buffers for observations
         self._obs_buffer = torch.zeros((1, num_obs), device=self.device, dtype=torch.float32)
-        self._task_label = torch.ones((1), device=self.device, dtype=torch.float32)
         self._target_positions =torch.zeros((1,2), device=self.device, dtype=torch.float32) #because the policy was trained to spawn randomly and go to (0.0)
 
         rospy.Subscriber("~goal", PoseStamped, self.goal_cb, queue_size=1)
@@ -78,7 +75,6 @@ class GoTo:
         self.cmd_drive_pub_ = rospy.Publisher("~cmd_drive", Drive, queue_size=1)
         self.rl_status_pub_ = rospy.Publisher("~rl_status", Bool, queue_size=1)
         self.marker_pub = rospy.Publisher("~goal_marker", Marker, queue_size = 1)
-
 
         self.odom_lock = threading.Lock()
         self.goal_lock = threading.Lock()
@@ -95,6 +91,31 @@ class GoTo:
         self.marker.color.a = 0.5
         self.marker.header.frame_id = "base_link"
 
+    def transform_twist(self, twist, transform):
+        """
+        Transforms a geometry_msgs/Twist message from one frame to another.
+
+        :param twist: The Twist message to transform.
+        :param transform: The transform to apply.
+        :return: The transformed Twist message.
+        """
+        # Create a Vector3Stamped message for the linear and angular components of the twist message
+        twist_linear = Vector3Stamped()
+        twist_linear.vector = twist.linear
+        twist_angular = Vector3Stamped()
+        twist_angular.vector = twist.angular
+
+        # Transform the linear and angular components of the twist message
+        twist_linear_transformed = tf2_geometry_msgs.do_transform_vector3(twist_linear, transform)
+        twist_angular_transformed = tf2_geometry_msgs.do_transform_vector3(twist_angular, transform)
+
+        # Create a new Twist message and assign the transformed components to it
+        twist_transformed = Twist()
+        twist_transformed.linear = twist_linear_transformed.vector
+        twist_transformed.angular = twist_angular_transformed.vector
+
+        return twist_transformed
+
     def odom_cb(self, msg):
         """
         Callback function for handling new odometry messages. The robot's current position and heading are stored in
@@ -102,7 +123,8 @@ class GoTo:
 
         :param msg: The incoming odometry message.
         """
-        incoming_frame = msg.child_frame_id
+        child_frame_id = msg.child_frame_id
+        frame_id = msg.header.frame_id
         
         pose_stamped = PoseStamped()
         pose_stamped.header = msg.header
@@ -111,13 +133,16 @@ class GoTo:
         twist_stamped = TwistStamped()
         twist_stamped.header = msg.header
         twist_stamped.twist = msg.twist.twist
+        # print(f"twist: \n{msg.twist.twist.linear}")
 
         try:
-            transform = self.tf_buffer.lookup_transform('base_link', incoming_frame, rospy.Time())
+            # We want want the pose in the base_link frame. For SBG the odom is not in base_link
+            transform = self.tf_buffer.lookup_transform('base_link', child_frame_id, rospy.Time())
             pose_transformed = tf2_geometry_msgs.do_transform_pose(pose_stamped, transform)
-            # TODO: Transform twist as well Necessary in case of the SBG IMU
-            # twist_transformed = tf2_geometry_msgs.do_transform_twist(twist_stamped, transform)
-            twist_transformed = twist_stamped
+            # We want the twist in the base_link frame and odometry published in the world frame
+            transform = self.tf_buffer.lookup_transform('base_link', frame_id, rospy.Time())
+            twist_transformed = self.transform_twist(twist_stamped.twist, transform)
+
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             rospy.logwarn(f"Failed to find transform from [{incoming_frame}] to [base_link] frame")
             return
@@ -129,13 +154,7 @@ class GoTo:
             self.odom.header = msg.header
             self.odom.child_frame_id = "base_link"
             self.odom.pose.pose = pose_transformed.pose
-            self.odom.twist.twist = twist_transformed.twist
-        # print(f"\nOdometry: {self.odom}")
-
-        # self.heading = [math.cos(msg.pose.pose.orientation.z), math.sin(msg.pose.pose.orientation.z)]
-        # self.lin_vel = [msg.twist.twist.linear.x, msg.twist.twist.linear.y]
-        # self.ang_vel = [msg.twist.twist.angular.z]
-        # self.robot_position = [msg.pose.pose.position.x, msg.pose.pose.position.y]
+            self.odom.twist.twist = twist_transformed
 
     def goal_cb(self, msg):
         # store the goal in the world frame
@@ -147,33 +166,27 @@ class GoTo:
     def get_observations(self):
 
         # convert to robot position from goal perspective with ofset
-        goal_pos = [self.goal_robot.pose.position.x, self.goal_robot.pose.position.y]
         with self.odom_lock:
             robot_pos = [self.odom.pose.pose.position.x, self.odom.pose.pose.position.y]
-        # print("goal_pos: ",goal_pos)
-        # print("robot_pos: ",robot_pos)
-        # print("heading", self.heading)
-        # print("ROBOT Position from Frame goal %.2f, %.2f" %(robot_pos[0],robot_pos[1]))
-        rospy.loginfo_throttle(1, "OBS Position %.2f, %.2f" %(goal_pos[0],goal_pos[1]))
-        goal_distance = np.linalg.norm(np.array(goal_pos))
-        rospy.loginfo_throttle(1, "OBS Distance: %.2f" % goal_distance)
+            robot_vel = [self.odom.twist.twist.linear.x, self.odom.twist.twist.linear.y]
+            robot_ang_vel = [self.odom.twist.twist.angular.z]
+        goal_pos = [self.goal_robot.pose.position.x, self.goal_robot.pose.position.y]
         goal_bearing = math.atan2(goal_pos[1], goal_pos[0])
-        rospy.loginfo_throttle(1, f"OBS Heading: {goal_bearing}")
+        goal_distance = np.linalg.norm(np.array(goal_pos))
+        goal_cos_sin = [math.cos(goal_bearing), math.sin(goal_bearing)]
 
+        # rospy.loginfo_throttle(1, f"OBS Position  \t{goal_pos[0]:.2f}, {goal_pos[1]:.2f}")
+        # rospy.loginfo_throttle(1, f"OBS Velocity  \t{robot_vel[0]:.2f}, {robot_vel[1]:.2f}")
+        # rospy.loginfo_throttle(1, f"OBS Distance: \t{goal_distance:.2f}")
+        # rospy.loginfo_throttle(1, f"OBS Heading:  \t{goal_bearing*180/math.pi:.2f}")
 
-        current_state = {"position":robot_pos, "orientation": self.heading, "linear_velocity": self.lin_vel, "angular_velocity":self.ang_vel}
-        
-        self._obs_buffer[:, 0:2] = torch.tensor(current_state["orientation"], device=self.device)
-        self._obs_buffer[:, 2:4] = torch.tensor(current_state["linear_velocity"], device=self.device)
-        self._obs_buffer[:, 4] = torch.tensor(current_state["angular_velocity"], device=self.device)
-        self._obs_buffer[:, 5] = self._task_label
-        self._obs_buffer[:, 6:8] = self._target_positions - torch.tensor(current_state["position"], device=self.device)
-        self._obs_buffer[:, 8:] = torch.tensor([0,0], device=self.device)
+        self._obs_buffer[:, 0:2] = torch.tensor(robot_vel, device=self.device)
+        self._obs_buffer[:, 2] = torch.tensor(robot_ang_vel, device=self.device)
+        self._obs_buffer[:, 3:5] = torch.tensor(goal_cos_sin, device=self.device)
+        self._obs_buffer[:, 5] = torch.tensor(goal_distance, device=self.device)
+        self._obs_buffer[:, 6:] = torch.tensor([0,0,0,0,0], device=self.device)
 
-
-        obs = dict({"state":self._obs_buffer,
-                    "transforms":torch.zeros((1, 2, 5), device=self.device, dtype=torch.float32),
-                    "masks":torch.zeros((1, 2), device=self.device, dtype=torch.long)})
+        obs = dict({"state":self._obs_buffer})
 
         return obs
                 
