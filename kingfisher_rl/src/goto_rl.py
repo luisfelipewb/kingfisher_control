@@ -59,7 +59,8 @@ class GoTo:
         self.goal_robot = None
         self.goal_world = None
         self.odom = None
-        self.age_thresh = rospy.Duration(1.0)
+        self.odom_timeout = rospy.Duration(1.0)
+        self.goal_timeout = rospy.Duration(60.0)
 
         self.lin_vel = [0.0, 0.0]
         self.ang_vel = [0.0]
@@ -82,13 +83,13 @@ class GoTo:
         self.marker = Marker()
         self.marker.type = 2
         self.marker.id = 0
-        self.marker.scale.x = 0.1
-        self.marker.scale.y = 0.1
-        self.marker.scale.z = 0.1
+        self.marker.scale.x = 0.3
+        self.marker.scale.y = 0.3
+        self.marker.scale.z = 0.3
         self.marker.color.r = 0.0
         self.marker.color.g = 1.0
         self.marker.color.b = 0.0
-        self.marker.color.a = 0.5
+        self.marker.color.a = 0.8
         self.marker.header.frame_id = "base_link"
 
     def transform_twist(self, twist, transform):
@@ -226,7 +227,7 @@ class GoTo:
             return False
         
         # Don't move if the odom is too old
-        if rospy.Time.now() - self.odom.header.stamp > self.age_thresh:
+        if rospy.Time.now() - self.odom.header.stamp > self.odom_timeout:
             rospy.logwarn_throttle(1, "Odometry is too old...")
             return False
         
@@ -239,7 +240,20 @@ class GoTo:
                 self.goal_world = None
             return False
 
+        if self.give_up():
+            rospy.loginfo("Goal not reached. Giving up...")
+            with self.goal_lock:
+                self.goal_world = None
+            return False
+
         return True
+
+    def give_up(self):
+        # Give up if the goal is too old
+        if rospy.Time.now() - self.goal_world.header.stamp > self.goal_timeout:
+            rospy.logwarn_throttle(1, "Goal is too old...")
+            return True
+        return False
 
     def goal_reached(self):
             """
@@ -279,7 +293,7 @@ class GoTo:
         
         rospy.loginfo_throttle(5,"RL is moving the robot")
 
-        # Update goal_robot position
+        # Update goal position in robot frame
         obs = self.get_observations()
 
         # Get actions from the policy
