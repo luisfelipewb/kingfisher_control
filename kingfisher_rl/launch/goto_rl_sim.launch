@@ -1,5 +1,7 @@
 <launch>
 
+   <arg name="policy" default="USV_PPOcontinuous_MLP.pth"/>
+
    <node pkg="kingfisher_rl" type="goto_rl.py" name="goto_rl" output="screen">
     <remap from="~goal" to="/move_base_simple/goal"/>
     <remap from="~cmd_drive" to="/cmd_drive"/>
@@ -7,7 +9,7 @@
     <remap from="~rl_status" to="/rl_status"/>
 
     <param name="config" value="USV_PPOcontinuous_MLP.yaml"/>
-    <param name="policy" value="USV_Virtual_GoToXY.pth"/>
+    <param name="policy" value="$(arg policy)"/>
   </node>
 
 </launch>

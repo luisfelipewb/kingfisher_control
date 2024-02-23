@@ -1,0 +1,6 @@
+<launch> 
+    <node pkg="kingfisher_rl" type="test_goto_sim.py" name ="test_goto_sim" output="screen"/>
+
+    <node pkg="rosbag" type="record" name="record" args="-O /home/lwolfbat/bags/test_goto_rl.bag /pose_gt /cmd_vel /cmd_drive /rl_status /move_base_simple/goal" />
+
+</launch>
