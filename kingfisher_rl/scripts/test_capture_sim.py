@@ -32,22 +32,11 @@ def test_goto_rl():
     # create a list with N different possitons distributed in a circle
     N = 36
     positions = []
-    dist = 7
-    for i in range(0, N):
-        x = dist * np.cos(2 * np.pi * i / N)
-        y = dist * np.sin(2 * np.pi * i / N)
-        positions.append((x, y))
-
-    # List of (x, y) positions
-    positions = []
-    for x in range(0, 8):
-        for y in range(0, 8):
-            if x + y < 1:
-                continue
-            positions.append((float(x), float(y)))
-            positions.append((float(-x), float(y)))
-            positions.append((float(x), float(-y)))
-            positions.append((float(-x), float(-y)))
+    for dist in range (1,11):
+        for i in range(0, N):
+            x = dist * np.cos(2 * np.pi * i / N)
+            y = dist * np.sin(2 * np.pi * i / N)
+            positions.append((x, y))
 
     # remove duplicates
     positions = list(set(positions))
