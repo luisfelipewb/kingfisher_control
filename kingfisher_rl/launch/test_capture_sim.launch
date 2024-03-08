@@ -1,7 +1,3 @@
 <launch> 
     <node pkg="kingfisher_rl" type="test_capture_sim.py" name ="test_capture_sim" output="screen"/>
-
-    <arg name="bag_name" default="~/test_capture_sim.bag" />
-    <node pkg="rosbag" type="record" name="record" args="-O $(arg bag_name) /pose_gt /cmd_vel /cmd_drive /rl_status /move_base_simple/goal" />
-
 </launch>

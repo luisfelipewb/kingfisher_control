@@ -40,7 +40,7 @@ class GoTo:
         rl_policy = rospy.get_param("~policy", "test.pth")
         
         self.rl_config_path = config_folder+rl_config
-        self.rl_policy_path=config_folder+rl_policy
+        self.rl_policy_path=rl_policy
         self.device = 'cuda'
 
         num_obs = 11
