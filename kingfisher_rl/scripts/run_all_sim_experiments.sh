@@ -2,17 +2,34 @@
 
 # CONFIGURATION VARIABLES
 models=(
-"Capture_OrigDA"
-"Capture_OrigSmallDR"
-"Capture_SysIDDA"
-"Capture_SysIDSmallDR"
+Capture_Nominal-DR0
+Capture_Nominal-DR50
+Capture_SysID-DR0
+Capture_SysID-DR50
 )
 
-WEIGHTS_BASE_PATH="/home/junghwan/RANS/omniisaacgymenvs/runs"
+WEIGHTS_BASE_PATH="/home/lwolfbat/uuv_ws/src/kingfisher_control/kingfisher_rl/output"
 BAGS_BASE_PATH="/home/lwolfbat/uuv_ws/src/kingfisher_control/kingfisher_rl/output"
 BAG_TOPICS="/pose_gt /cmd_vel /cmd_drive /rl_status /move_base_simple/goal"
 DEBUG=false #only true of false
 
+test_model_paths () {
+      for model in "${models[@]}"; do
+        if [ ! -f "$WEIGHTS_BASE_PATH/$model.pth" ]; then
+          echo "Model $model does not exist at $WEIGHTS_BASE_PATH/$model.pth"
+          exit 1
+        fi
+        ls -l $WEIGHTS_BASE_PATH/$model.pth
+        # cp $WEIGHTS_BASE_PATH/$model/nn/$model.pth /home/lwolfbat/uuv_ws/src/kingfisher_control/kingfisher_rl/
+
+        # Parse task and model name
+        task_name=${model%_*}
+        model_name=${model#*_}
+        echo "Task:$task_name"
+        echo "Model:$model_name"
+      done
+      # exit 0
+}
 
 wait_for_gazebo() {
   # Loop indefinitely until the topic "/pose_gt" is found which means that Gazebo is ready
@@ -42,21 +59,8 @@ use_gazebo_params() {
     snippets_target="${base_dir}/snippets_${param_type}.xacro"
     ln -sf $snippets_target $snippets_path
 
-    # Change gazebo file
-    gazebo_path="${base_dir}/gazebo.xacro"
-    gazebo_target="${base_dir}/gazebo_${param_type}.xacro"
-    ln -sf $gazebo_target $gazebo_path
     
     echo "Using $param_type gazebo params"
-}
-
-use_sysid_params() {
-  snippets_dir="/home/lwolfbat/uuv_ws/src/heron/heron_description/urdf/"
-  snippets_path=" ${snippets_dir}/snippets.xacro"
-  snippets_target="${snippets_dir}/snippets_sysid.xacro"
-  ln -sf $snippets_target $snippets_path
-
-  echo "Using SysID gazebo params"
 }
 
 run_gazebo_sim_tests() {
@@ -94,10 +98,9 @@ run_gazebo_sim_tests() {
         model_path="$WEIGHTS_BASE_PATH/$model/nn/$model.pth"
         echo "Model path: $model_path"
         
+        # Parse task and model name
         task_name=${model%_*}
-        # print only the characters after the underscore in the model name
         model_name=${model#*_}
-
 
         # Fix the bag name
         bag_name=${task_name}_${sim_name}_${model_name}.bag
@@ -143,12 +146,12 @@ run_gazebo_sim_tests() {
     fi
 }
 
-
+test_model_paths
 
 echo "Running all simulation experiments"
 
 
-run_gazebo_sim_tests "Orig"
+# run_gazebo_sim_tests "Orig"
 run_gazebo_sim_tests "SysID"
 
 

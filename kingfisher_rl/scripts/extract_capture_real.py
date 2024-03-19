@@ -13,9 +13,11 @@ import math
 # Topics to extract from simullation:
 pose = '/imu/odometry'
 cmd_drive = '/cmd_drive'
+rl_status = '/rl_status'
 position_goal = '/move_base_simple/goal'
 
 topic_list = [pose, cmd_drive, position_goal]
+topic_list = [pose, cmd_drive, position_goal, rl_status]
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--bag_file', type=str, help="Path to the bag file")
@@ -96,20 +98,32 @@ for topic, msg, t in bag.read_messages(topics=topic_list):
         reference_pose = current_pose
         print(f"{t} Reference pose: {reference_pose.pose.pose.position.x:.2f}, {reference_pose.pose.pose.position.y:.2f}")
 
-    elif topic in [cmd_drive]:
-        # new_status = msg.data
-        rl_running = check_rl_running(msg.left, msg.right)
+    elif topic == rl_status:
 
+        new_status = msg.data
         if rl_running != new_status:
-            # print(f"RL status changed from {rl_running} to {new_status}")msg.left
-            new_status = check_rl_running(msg.left, msg.right)
-            #print(f"RL status changed from {rl_running} to {new_status}")
+            # print(f"RL status changed from {rl_running} to {new_status}")
             if new_status:
                 print(f"{t} RL is running")
                 rl_running = new_status
             else:
                 print(f"{t} RL is not running")
                 rl_running = new_status
+
+    # elif topic in [cmd_drive]:
+    #     # new_status = msg.data
+    #     rl_running = check_rl_running(msg.left, msg.right)
+
+    #     if rl_running != new_status:
+    #         # print(f"RL status changed from {rl_running} to {new_status}")msg.left
+    #         new_status = check_rl_running(msg.left, msg.right)
+    #         #print(f"RL status changed from {rl_running} to {new_status}")
+    #         if new_status:
+    #             print(f"{t} RL is running")
+    #             rl_running = new_status
+    #         else:
+    #             print(f"{t} RL is not running")
+    #             rl_running = new_status
     
     # Always extract pose, but it will be only used if it has a goal and RL is running
     if topic in [pose]:

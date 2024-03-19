@@ -20,19 +20,4 @@ for filename in os.listdir(directory):
             print(f"Error processing {filename}: {e}")
 
 
-for filename in os.listdir(directory):
-    if filename.endswith(".csv"):
-        print(f"Ploting {filename}...")
-
-        csv_path = os.path.join(directory, filename)
-        plot_path = csv_path.replace(".csv", ".png")
-
-        command = f"rosrun kingfisher_rl plot_capture.py -i {csv_path} -o {plot_path}"
-
-        try:
-            subprocess.run(command, shell=True, check=True)
-            print(f"Plotted {filename} successfully.")
-        except subprocess.CalledProcessError as e:
-            print(f"Error plotting {filename}: {e}")
-
 print("Done.")

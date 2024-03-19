@@ -32,7 +32,7 @@ class GoTo:
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(5.0))
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         
-        self.dist_threshold = 0.2
+        self.dist_threshold = 0.3
 
         config_folder = rospkg.RosPack().get_path('kingfisher_rl') + "/config/"
     
@@ -66,6 +66,7 @@ class GoTo:
         self.ang_vel = [0.0]
         self.heading = [0.0, 0.0]
         self.robot_position = [0.0, 0.0]
+        self.previous_actions = [0.0, 0.0]
 
         #buffers for observations
         self._obs_buffer = torch.zeros((1, num_obs), device=self.device, dtype=torch.float32)
@@ -175,6 +176,7 @@ class GoTo:
         goal_bearing = math.atan2(goal_pos[1], goal_pos[0])
         goal_distance = np.linalg.norm(np.array(goal_pos))
         goal_cos_sin = [math.cos(goal_bearing), math.sin(goal_bearing)]
+        previous_actions = self.previous_actions
 
         # rospy.loginfo_throttle(1, f"OBS Position  \t{goal_pos[0]:.2f}, {goal_pos[1]:.2f}")
         # rospy.loginfo_throttle(1, f"OBS Velocity  \t{robot_vel[0]:.2f}, {robot_vel[1]:.2f}")
@@ -186,6 +188,8 @@ class GoTo:
         self._obs_buffer[:, 3:5] = torch.tensor(goal_cos_sin, device=self.device)
         self._obs_buffer[:, 5] = torch.tensor(goal_distance, device=self.device)
         self._obs_buffer[:, 6:] = torch.tensor([0,0,0,0,0], device=self.device)
+        # self._obs_buffer[:, 6:8] = torch.tensor(previous_actions, device=self.device)
+        # self._obs_buffer[:, 8:] = torch.tensor([0,0,0], device=self.device)
 
         obs = dict({"state":self._obs_buffer})
 
@@ -298,6 +302,7 @@ class GoTo:
 
         # Get actions from the policy
         tl, tr = self.get_action(obs)
+        self.previous_actions = [tl, tr]
 
         # Publish the actions
         self.publish_cmds(tl, tr)

@@ -30,17 +30,17 @@ def test_goto_rl():
     goal.pose.orientation.w = 1.0  # Set goal orientation (w=1.0 means no rotation)
 
     # create a list with N different possitons distributed in a circle
-    N = 36
+    N = 36*2
+    distances = [3,4,5,6,7,8,9]
     positions = []
-    for dist in range (1,11):
+    for dist in distances:
         for i in range(0, N):
             x = dist * np.cos(2 * np.pi * i / N)
             y = dist * np.sin(2 * np.pi * i / N)
-            positions.append((x, y))
-
-    # remove duplicates
-    positions = list(set(positions))
-    positions.sort()
+            # If the position is within -45 and 45 degrees from the x axis add it to the list
+            angle = np.arctan2(y, x) + 0.01
+            if angle >= -np.pi/4 and angle <= np.pi/4:
+                positions.append((x, y))
 
     rospy.sleep(1.0)
     for position in positions:

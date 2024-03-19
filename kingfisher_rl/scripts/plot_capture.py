@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 import pandas as pd
 import csv
+import matplotlib
+matplotlib.use('Agg')  # Set the backend to 'Agg'
 import matplotlib.pyplot as plt
 import numpy as np
 import argparse
@@ -76,13 +78,20 @@ ax2.set_xlim(0, 60)
 # ax2.legend()
 
 # ax1.legend()
-scatter = plt.scatter(distances, bearings, c=energies, vmin=0, vmax=1000, s=30, marker="s", cmap='coolwarm')
+print(f"max energy: {max(energies)}")
+# scatter = plt.scatter(distances, bearings, c=energies, vmin=0, vmax=max(energies), s=30, marker="s", cmap='coolwarm')
+scatter = plt.scatter(distances, bearings, c=energies, vmin=0, vmax=275, s=30, marker="s", cmap='coolwarm')
+
+
 ax3.set_title('energy vs. initial bearing and distance')
 ax3.set_xlabel('initial distance to goal (m)')
 ax3.set_ylabel('initial bearing to goal (deg)')
 ax3.grid(True)
 fig.colorbar(scatter, ax=ax3, label='accumulated energy')
 
-plt.tight_layout()  # Adjust the spacing between subplots
+# Set figure title and labels
+title = args.input_file.split('/')[-1].split('.')[0]
+fig.suptitle(title)
+
 plt.savefig(args.output_file)
 plt.close()

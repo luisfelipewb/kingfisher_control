@@ -41,7 +41,7 @@ rl_running = False
 
 
 # Open csv file for writing 
-f = open(csv_file, 'w') 
+f = open(csv_file, 'w')
 writer = csv.writer(f)
 writer.writerow(['time', 'goal', 'x', 'y', 'x_goal', 'y_goal', 'distance_to_goal', 'cmd_drive_l', 'cmd_drive_r'])
 
