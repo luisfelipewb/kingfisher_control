@@ -40,10 +40,11 @@ class GoTo:
         rl_policy = rospy.get_param("~policy", "test.pth")
         
         self.rl_config_path = config_folder+rl_config
-        self.rl_policy_path=rl_policy
+        self.rl_policy_path = config_folder+rl_policy
         self.device = 'cuda'
 
         num_obs = 11
+        num_obs = 6
         max_actions = 2
 
         with open(self.rl_config_path, 'r') as stream:
@@ -51,7 +52,7 @@ class GoTo:
         
         observation_space = spaces.Dict({"state":spaces.Box(np.ones(num_obs) * -np.Inf, np.ones(num_obs) * np.Inf)})
         
-        action_space = spaces.Box(low=np.array([-1.0, -1.0]), high=np.array([1.0, 1.0]), dtype=np.float32)
+        action_space = spaces.Box(low=np.array([-1.0, -1.0]), high=np.array([1.0, 1.0]), dtype=np.float64)
         
         self.player = BasicPpoPlayerContinuous(self.cfg, observation_space, action_space, clip_actions=True, deterministic=True)
         self.player.restore(self.rl_policy_path)
@@ -187,9 +188,6 @@ class GoTo:
         self._obs_buffer[:, 2] = torch.tensor(robot_ang_vel, device=self.device)
         self._obs_buffer[:, 3:5] = torch.tensor(goal_cos_sin, device=self.device)
         self._obs_buffer[:, 5] = torch.tensor(goal_distance, device=self.device)
-        self._obs_buffer[:, 6:] = torch.tensor([0,0,0,0,0], device=self.device)
-        # self._obs_buffer[:, 6:8] = torch.tensor(previous_actions, device=self.device)
-        # self._obs_buffer[:, 8:] = torch.tensor([0,0,0], device=self.device)
 
         obs = dict({"state":self._obs_buffer})
 

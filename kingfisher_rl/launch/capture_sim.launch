@@ -8,7 +8,7 @@
     <remap from="~odom" to="/pose_gt"/>
     <remap from="~rl_status" to="/rl_status"/>
 
-    <param name="config" value="USV_PPOcontinuous_MLP.yaml"/>
+    <param name="config" value="ASV_PPOcontinuous_MLP.yaml"/>
     <param name="policy" value="$(arg policy)"/>
   </node>
 
