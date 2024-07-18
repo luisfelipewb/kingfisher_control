@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-
 import rospy
-from heron_msgs.msg import Drive
+from kingfisher_msgs.msg import Drive
 from nav_msgs.msg import Odometry
 from std_msgs.msg import String
 import rospkg
@@ -18,11 +17,11 @@ class SequenceRunner:
         rospy.init_node('sequence_runner')
 
         # Ensuring we're using simulation time
-        if rospy.get_param('/use_sim_time', False):
-            rospy.loginfo("Using simulation time")
-        else:
-            rospy.loginfo("Simulation time not enabled. Set '/use_sim_time' parameter to True.")
-            return
+        # if rospy.get_param('/use_sim_time', False):
+        #     rospy.loginfo("Using simulation time")
+        # else:
+        #     rospy.loginfo("Simulation time not enabled. Set '/use_sim_time' parameter to True.")
+        #     return
         
         self.current_position = None
         self.current_velocity = None
@@ -40,8 +39,10 @@ class SequenceRunner:
     def load_sequence(self):
         # Open the experiments.yaml file and load the experiments
         rospack = rospkg.RosPack()
-        package_path = rospack.get_path('kingfisher_sid')  # Replace 'your_package_name' with the name of your package
+        package_path = rospack.get_path('test_rl')  # Replace 'your_package_name' with the name of your package
         config_path = package_path+'/config/experiments.yaml'  # Assuming the file is in the 'config' directory
+        rospy.logdebug(f"Using configuration path: {config_path}")
+
         with open(config_path, 'r') as file:
             experiments = yaml.safe_load(file)
 
@@ -63,7 +64,8 @@ class SequenceRunner:
     def rotate_velocity(self, orientation, velocity):
         euler = tf.transformations.euler_from_quaternion([orientation.w, orientation.x, orientation.y, orientation.z])
         yaw = euler[0]
-
+        # print(euler)
+        # print(f"yaw:{yaw:.2f}")
         yaw = np.arctan2(np.sin(yaw+np.pi), np.cos(yaw+np.pi))  # Ensure angle is within -pi to pi
 
         rotation_matrix = np.array([[np.cos(yaw), -np.sin(yaw)],
@@ -90,9 +92,8 @@ class SequenceRunner:
     def save_output_file(self):
         # Save the results of the experiment in a csv file
         rospack = rospkg.RosPack()
-        package_path = rospack.get_path('kingfisher_sid')  # Replace 'your_package_name' with the name of your package
-        output_dir = package_path+'/output'  # Assuming the file is in the 'config' directory
-
+        package_path = rospack.get_path('test_rl')  # Replace 'your_package_name' with the name of your package
+        output_dir = os.path.join(package_path, 'output')
         os.makedirs(output_dir, exist_ok=True)
         output_file = os.path.join(output_dir, f"{self.experiment_name}.csv")
 

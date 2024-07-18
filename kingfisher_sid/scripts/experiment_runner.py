@@ -30,13 +30,10 @@ for experiment in experiments:
         'roslaunch',
         'kingfisher_sid',
         'run_sequence.launch',
-        'experiment_name:={}'.format(experiment_name)
+        'experiment_name:={}'.format(experiment_name),
+        'output_dir:=/home/isaac_user/uuv_ws/src/test_rl/output/'
     ]
 
-    # Run the command
-    subprocess.run(command)
-
-    print(f"Finished experiment {count} of {len(experiments)}")
     if args.simulation:
         # create ros command to reset the gazebo environemtn 
         command = [
@@ -51,5 +48,10 @@ for experiment in experiments:
         sleep(1)
     else: 
         # Wait for the user to press a key before continuing
-        input("Press any key to continue with the next experiment...")
+        print(f"Ready for experiment {count}/{len(experiments)}: {experiment_name}")
+        input("Press any key to continue...")
+    # Run the command
+    subprocess.run(command)
+    print(f"Finished experiment {count} of {len(experiments)}")
+
     count += 1

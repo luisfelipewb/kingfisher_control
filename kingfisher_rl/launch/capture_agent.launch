@@ -1,0 +1,15 @@
+<launch>
+
+   <arg name="policy" default="USV_Virtual_GoToXY.pth"/>
+
+   <node pkg="kingfisher_rl" type="capture_agent.py" name="goto_rl" output="screen">
+    <remap from="~goal" to="/move_base_simple/goal"/>
+    <remap from="~cmd_drive" to="/cmd_drive"/>
+    <remap from="~odom" to="/imu/odometry"/>
+    <remap from="~rl_status" to="/rl_status"/>
+
+    <param name="config" value="USV_PPOcontinuous_MLP.yaml"/>
+    <param name="policy" value="$(arg policy)"/>
+  </node>
+
+</launch>

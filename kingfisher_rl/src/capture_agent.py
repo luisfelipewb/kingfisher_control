@@ -4,7 +4,7 @@ import rospy
 from geometry_msgs.msg import TwistStamped, PoseStamped, Twist, Vector3Stamped
 from std_msgs.msg import Bool
 from nav_msgs.msg import Odometry
-from heron_msgs.msg import Drive
+from kingfisher_msgs.msg import Drive
 import tf2_geometry_msgs
 import tf2_ros
 import rospkg
@@ -162,7 +162,16 @@ class GoTo:
     def goal_cb(self, msg):
         # store the goal in the world frame
         with self.goal_lock:
-            self.goal_world = msg
+            try:
+                transform = self.tf_buffer.lookup_transform('odom', msg.header.frame_id, rospy.Time())
+                goal_transformed = tf2_geometry_msgs.do_transform_pose(msg, transform)
+            except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+                rospy.logwarn(f"Failed to find transform goal from [{self.goal_world.header.frame_id}] to [base_link] frame")
+                return
+
+            self.goal_world = goal_transformed
+            # During field tests, time might not be synchronized with the computer running rviz.
+            self.goal_world.header.stamp = rospy.Time.now()
 
         return
 
