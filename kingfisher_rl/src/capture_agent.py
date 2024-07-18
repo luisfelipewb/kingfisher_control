@@ -32,7 +32,7 @@ class GoTo:
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(5.0))
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         
-        self.dist_threshold = 0.2
+        self.dist_threshold = 0.3
 
         config_folder = rospkg.RosPack().get_path('kingfisher_rl') + "/config/"
     
@@ -60,7 +60,7 @@ class GoTo:
         self.goal_world = None
         self.odom = None
         self.odom_timeout = rospy.Duration(1.0)
-        self.goal_timeout = rospy.Duration(45.0)
+        self.goal_timeout = rospy.Duration(60.0)
 
         self.lin_vel = [0.0, 0.0]
         self.ang_vel = [0.0]

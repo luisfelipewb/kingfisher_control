@@ -5,6 +5,7 @@
   <node pkg="kingfisher_sid" type="sequence_runner.py" name="sequence_runner" output="screen">
     <remap from="cmd" to="cmd_drive"/>
     <remap from="odom" to="pose_gt"/>
+    <remap from="odom" to="imu/odometry"/>
     <param name="experiment_name" value="$(arg experiment_name)"/>
   </node>
 
