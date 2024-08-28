@@ -1,0 +1,22 @@
+<launch>
+
+  <arg name="config" default="ASV_PPOcontinuous_MLP.yaml"/>
+  <arg name="policy" default="policy.pth"/>
+
+  <node pkg="kingfisher_neuralparc" type="neuralparc_agent.py" name="neuralparc_agent" output="screen">
+    <remap from="~goal" to="/move_base_simple/goal"/>
+    <remap from="~cmd_drive" to="/cmd_drive"/>
+    <remap from="~odom" to="/pose_gt"/> <!-- /imu/odometry | /pose_gt -->
+    <remap from="~rl_status" to="/rl_status"/>
+
+    <param name="/rosconsole/logger_level" value="debug" />
+    <param name="config_file" value="$(arg config)"/>
+    <param name="policy_file" value="$(arg policy)"/>
+    <param name="dist_threshold" value="0.3"/>
+    <param name="control_freq" value="20"/>
+
+    <param name="anti_goal_p1" value="0.5"/>
+    <param name="anti_goal_p2" value="0.5"/>
+  </node>
+
+</launch>
