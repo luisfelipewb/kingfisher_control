@@ -1,15 +1,20 @@
 <launch>
 
-   <arg name="policy" default="USV_Virtual_GoToXY.pth"/>
+  <arg name="config" default="ASV_PPOcontinuous_MLP.yaml"/>
+  <arg name="policy" default="ASV_GoThroughPosition.pth"/>
 
-   <node pkg="kingfisher_rl" type="capture_agent.py" name="goto_rl" output="screen">
+  <node pkg="kingfisher_rl" type="capture_agent.py" name="rl_agent" output="screen">
     <remap from="~goal" to="/move_base_simple/goal"/>
     <remap from="~cmd_drive" to="/cmd_drive"/>
-    <remap from="~odom" to="/imu/odometry"/>
+    <remap from="~odom" to="/pose_gt"/> <!-- /imu/odometry | /pose_gt -->
     <remap from="~rl_status" to="/rl_status"/>
 
-    <param name="config" value="USV_PPOcontinuous_MLP.yaml"/>
-    <param name="policy" value="$(arg policy)"/>
+    <param name="/rosconsole/logger_level" value="debug" />
+    <param name="config_file" value="$(arg config)"/>
+    <param name="policy_file" value="$(arg policy)"/>
+    <param name="dist_threshold" value="0.3"/>
+    <param name="control_freq" value="20"/>
+    <param name="obs_buffer_len" value="1"/>
   </node>
 
 </launch>

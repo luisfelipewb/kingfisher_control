@@ -4,7 +4,7 @@ import rospy
 from geometry_msgs.msg import TwistStamped, PoseStamped, Twist, Vector3Stamped
 from std_msgs.msg import Bool
 from nav_msgs.msg import Odometry
-from kingfisher_msgs.msg import Drive
+from heron_msgs.msg import Drive
 import tf2_geometry_msgs
 import tf2_ros
 import rospkg
@@ -21,40 +21,41 @@ from visualization_msgs.msg import Marker
 
 # print path of the rl_games python library
 import rl_games
+import time
 print(rl_games.__file__)
 
-class GoTo:
+class RLAgent:
 
     def __init__(self):
         
-        rospy.init_node('goto_rl')
+        rospy.init_node('rl_agent')
 
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(5.0))
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
-        
-        self.dist_threshold = 0.3
+
+        rl_config = rospy.get_param("~config_file", "test.yaml")
+        rl_policy = rospy.get_param("~policy_file", "test.pth")
+
+        self.dist_threshold = rospy.get_param("~dist_threshold", 0.3)
+        self.control_freq = rospy.get_param("~control_freq", 20.0)
 
         config_folder = rospkg.RosPack().get_path('kingfisher_rl') + "/config/"
-    
-        rl_config = rospy.get_param("~config", "test.yaml")
-        rl_policy = rospy.get_param("~policy", "test.pth")
-        
         self.rl_config_path = config_folder+rl_config
         self.rl_policy_path = config_folder+rl_policy
-        self.device = 'cuda'
+        self.device = 'cpu'
 
-        num_obs = 11
-        num_obs = 6
-        max_actions = 2
+        num_obs = 7
+        obs_buffer_len = rospy.get_param("~obs_buffer_len", 1)
+        size_buffer = obs_buffer_len * num_obs
 
         with open(self.rl_config_path, 'r') as stream:
             self.cfg = yaml.safe_load(stream)
         
-        observation_space = spaces.Dict({"state":spaces.Box(np.ones(num_obs) * -np.Inf, np.ones(num_obs) * np.Inf)})
+        observation_space = spaces.Dict({"state":spaces.Box(np.ones(size_buffer) * -np.Inf, np.ones(size_buffer) * np.Inf)})
         
         action_space = spaces.Box(low=np.array([-1.0, -1.0]), high=np.array([1.0, 1.0]), dtype=np.float64)
         
-        self.player = BasicPpoPlayerContinuous(self.cfg, observation_space, action_space, clip_actions=True, deterministic=True)
+        self.player = BasicPpoPlayerContinuous(self.cfg, observation_space, action_space, clip_actions=True, deterministic=True, device=self.device)
         self.player.restore(self.rl_policy_path)
 
         self.goal_robot = None
@@ -70,8 +71,7 @@ class GoTo:
         self.previous_actions = [0.0, 0.0]
 
         #buffers for observations
-        self._obs_buffer = torch.zeros((1, num_obs), device=self.device, dtype=torch.float32)
-        self._target_positions =torch.zeros((1,2), device=self.device, dtype=torch.float32) #because the policy was trained to spawn randomly and go to (0.0)
+        self._obs_buffer = torch.zeros((1, obs_buffer_len, num_obs), device=self.device, dtype=torch.float32)
 
         rospy.Subscriber("~goal", PoseStamped, self.goal_cb, queue_size=1)
         rospy.Subscriber("~odom", Odometry, self.odom_cb, queue_size=1)
@@ -147,7 +147,7 @@ class GoTo:
             twist_transformed = self.transform_twist(twist_stamped.twist, transform)
 
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-            rospy.logwarn(f"Failed to find transform from [{incoming_frame}] to [base_link] frame")
+            rospy.logwarn(f"Failed to find transform from [{frame_id}] to [base_link] frame")
             return
 
         # print(f"\nOriginal: {msg.pose.pose}")
@@ -186,19 +186,23 @@ class GoTo:
         goal_bearing = math.atan2(goal_pos[1], goal_pos[0])
         goal_distance = np.linalg.norm(np.array(goal_pos))
         goal_cos_sin = [math.cos(goal_bearing), math.sin(goal_bearing)]
-        previous_actions = self.previous_actions
 
         # rospy.loginfo_throttle(1, f"OBS Position  \t{goal_pos[0]:.2f}, {goal_pos[1]:.2f}")
         # rospy.loginfo_throttle(1, f"OBS Velocity  \t{robot_vel[0]:.2f}, {robot_vel[1]:.2f}")
         # rospy.loginfo_throttle(1, f"OBS Distance: \t{goal_distance:.2f}")
         # rospy.loginfo_throttle(1, f"OBS Heading:  \t{goal_bearing*180/math.pi:.2f}")
 
-        self._obs_buffer[:, 0:2] = torch.tensor(robot_vel, device=self.device)
-        self._obs_buffer[:, 2] = torch.tensor(robot_ang_vel, device=self.device)
-        self._obs_buffer[:, 3:5] = torch.tensor(goal_cos_sin, device=self.device)
-        self._obs_buffer[:, 5] = torch.tensor(goal_distance, device=self.device)
+        # Shift the buffer
+        self._obs_buffer[0,:-1, :] = self._obs_buffer[0,1:, :].clone()
+        # Update the buffer with the new observation
+        self._obs_buffer[0,-1, 0:2] = torch.tensor(robot_vel, device=self.device)
+        self._obs_buffer[0,-1, 2] = torch.tensor(robot_ang_vel, device=self.device)
+        self._obs_buffer[0,-1, 3:5] = torch.tensor(goal_cos_sin, device=self.device)
+        self._obs_buffer[0,-1, 5] = torch.tensor(goal_distance, device=self.device)
+        self._obs_buffer[0,-1, 6] = torch.tensor(0.8, device=self.device)
+        self._obs_buffer_flat = self._obs_buffer.view(1,-1).clone()
 
-        obs = dict({"state":self._obs_buffer})
+        obs = dict({"state":self._obs_buffer_flat})
 
         return obs
                 
@@ -318,11 +322,11 @@ class GoTo:
 
 if __name__ == '__main__':
 
-    goto_rl = GoTo()
-    rate = rospy.Rate(10) # 10 Hz control frequency. TODO: use rosparam
+    rl_agent = RLAgent()
+    rate = rospy.Rate(rl_agent.control_freq)
 
     while not rospy.is_shutdown():
-        goto_rl.control_loop()
+        rl_agent.control_loop()
         rate.sleep()
 
 
