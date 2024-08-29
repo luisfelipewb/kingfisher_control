@@ -5,7 +5,7 @@
 
   <node pkg="kingfisher_rl" type="capture_agent.py" name="rl_agent" output="screen">
     <remap from="~goal" to="/move_base_simple/goal"/>
-    <remap from="~cmd_drive" to="/cmd_drive"/>
+    <!-- <remap from="~cmd_drive" to="/cmd_drive"/> -->
     <remap from="~odom" to="/pose_gt"/> <!-- /imu/odometry | /pose_gt -->
     <remap from="~rl_status" to="/rl_status"/>
 

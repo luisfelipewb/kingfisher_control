@@ -5,7 +5,7 @@ import rospy
 from heron_msgs.msg import Drive
 from sensor_msgs.msg import Joy
 
-
+from topic_tools.srv import MuxSelect
 
 class CmdDriveTeleop:
 
@@ -18,6 +18,7 @@ class CmdDriveTeleop:
         self.turn_button = rospy.get_param('~turn_button', 6)
         self.drive_button = rospy.get_param('~drive_button', 4)
         self.direct_drive_button = rospy.get_param('~direct_drive_button', 5)
+        self.mux_button = rospy.get_param('~mux_button', 7)
 
         self.left_axis_v = rospy.get_param('~left_axis_v', 1)
         self.right_axis_h = rospy.get_param('~right_axis_h', 3)
@@ -32,12 +33,13 @@ class CmdDriveTeleop:
         self.forward_max_turbo = rospy.get_param('~forward_max_turbo', 1.0)
 
         self.current_fw_max = self.forward_max
+        self.start_prev = None
 
-        self.drive_pub = rospy.Publisher('/cmd_drive', Drive, queue_size=1)
         self.cmd_drive = Drive()
         self.joy_sub = rospy.Subscriber('joy', Joy, self.joy_callback)
         self.cmd_drive_pub = rospy.Publisher('~cmd_drive', Drive, queue_size=1)
 
+        self.drive_mux_service = rospy.ServiceProxy('/drive_mux/select', MuxSelect)
 
     def scale_max(self, value):
 
@@ -53,7 +55,19 @@ class CmdDriveTeleop:
             return_value = self.reverse_min + value * (self.reverse_min - self.reverse_max)
         return return_value
 
+    def call_mux(self, start):
+        if start == 1 and self.start_prev == 0:
+            try:
+                self.drive_mux_service('teleop/cmd_drive')
+                rospy.loginfo("Select teleop input")
+            except rospy.ServiceException as e:
+                rospy.logwarn("Service call failed: %s" % e)
+
+        self.start_prev = start
+
     def joy_callback(self, joy_msg):
+
+        self.call_mux(joy_msg.buttons[self.mux_button])
 
         left, right = 0.0, 0.0
         
@@ -104,13 +118,9 @@ class CmdDriveTeleop:
         elif joy_msg.buttons[self.direct_drive_button] == 1:
             left = joy_msg.axes[self.left_axis_v]
             right = joy_msg.axes[self.right_axis_v]
-            print(f"left: {left}")
-            print(f"right: {right}")
 
             left = self.map_range(left)
             right = self.map_range(right)
-            print(f"left_scaled: {left}")
-            print(f"right_scaled: {right}")
 
         self.publish_cmd_drive(left, right)
     
