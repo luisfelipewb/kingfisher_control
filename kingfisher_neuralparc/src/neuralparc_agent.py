@@ -203,8 +203,8 @@ class RLAgent:
         # Update the buffer with the new observation
         self._obs_buffer[0,0:2] = torch.tensor(robot_vel, device=self.device)
         self._obs_buffer[0,2] = torch.tensor(robot_ang_vel, device=self.device)
-        self._obs_buffer[0,3:5] = torch.tensor(goal_cos_sin, device=self.device)
-        self._obs_buffer[0,5] = torch.tensor(goal_distance, device=self.device)
+        self._obs_buffer[0,3] = torch.tensor(goal_distance, device=self.device)
+        self._obs_buffer[0,4:6] = torch.tensor(goal_cos_sin, device=self.device)
         self._obs_buffer[0,6] = torch.tensor(self.init_goal_distance, device=self.device)
         self._obs_buffer[0,7:9] = torch.tensor(self.init_goal_cos_sin, device=self.device)
         self._obs_buffer[0,9] = torch.tensor(self.anti_goal_p1, device=self.device) 
@@ -212,8 +212,8 @@ class RLAgent:
 
         rospy.loginfo_throttle(1, f"obs_buffer[0,0:2]: {self._obs_buffer[0,0:2]}")
         rospy.loginfo_throttle(1, f"obs_buffer[0,2]  : {self._obs_buffer[0,2]}")
-        rospy.loginfo_throttle(1, f"obs_buffer[0,3:5]: {self._obs_buffer[0,3:5]}")
-        rospy.loginfo_throttle(1, f"obs_buffer[0,5]  : {self._obs_buffer[0,5]}")
+        rospy.loginfo_throttle(1, f"obs_buffer[0,3]  : {self._obs_buffer[0,4]}")
+        rospy.loginfo_throttle(1, f"obs_buffer[0,4:5]: {self._obs_buffer[0,4:6]}")
         rospy.loginfo_throttle(1, f"obs_buffer[0,6]  : {self._obs_buffer[0,6]}")
         rospy.loginfo_throttle(1, f"obs_buffer[0,7:9]: {self._obs_buffer[0,7:9]}")
         rospy.loginfo_throttle(1, f"obs_buffer[0,9]  : {self._obs_buffer[0,9]}")
