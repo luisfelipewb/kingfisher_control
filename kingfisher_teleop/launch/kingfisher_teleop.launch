@@ -1,0 +1,25 @@
+<launch>
+
+  <!-- rosrun joy joy_node _autorepeat_rate:=20 -->
+  <node pkg="kingfisher_teleop" type="cmd_drive_teleop.py" name="teloop" output="screen">
+    
+    <remap from="~joy" to="/joy"/>
+    <remap from="~cmd_drive" to="/cmd_drive"/>
+
+    
+    <param name="left_axis_v" value="1"/>
+    <param name="right_axis_h" value="3"/>
+    <param name="right_axis_v" value="4"/>
+    <param name="turbo_axis" value="5"/>
+
+    <param name="drive_button" value="4"/>
+    <param name="direct_drive_button" value="5"/>
+
+    <param name="forward_min" value="0.4"/>
+    <param name="forward_max" value="0.5"/>
+    <param name="forward_max_turbo" value="0.9"/>
+    <param name="reverse_min" value="-0.5"/>
+    <param name="reverse_max" value="-0.9"/>
+  </node>
+
+</launch>
