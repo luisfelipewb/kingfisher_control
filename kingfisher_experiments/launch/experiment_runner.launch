@@ -1,0 +1,12 @@
+<launch>
+
+
+  <node pkg="kingfisher_experiments" type="experiment_runner.py" name="experiment_runner" output="screen">
+    <remap from="~goal" to="/move_base_simple/goal"/>
+    <remap from="~odom" to="/local_odom"/> <!-- /imu/odometry | /pose_gt -->
+
+    <param name="experiments_file" value="experiments.yaml"/>
+    <param name="send_goal_button" value="7"/>
+  </node>
+
+</launch>

@@ -1,0 +1,8 @@
+experiments:
+  - {v0: 0.0, dist: 3, bearing: 0}
+  - {v0: -0.5, dist: 1, bearing: -40}
+  - {v0: 1.0, dist: 4, bearing: 0}
+  - {v0: -0.5, dist: 3, bearing: 30}
+  - {v0: 1.5, dist: 5, bearing: 15}
+  - {v0: 0.0, dist: 2, bearing: -15}
+  - {v0: -0.5, dist: 12, bearing: -150}

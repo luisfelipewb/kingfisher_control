@@ -88,79 +88,13 @@ class VelocityTracker:
         return SetFloatResponse(success=True, message=f"kd set to {self.pid_controller.kd}")
 
     def set_velocity_cb(self, req):
-
         self.target_velocity = req.data
         rospy.loginfo(f"Set target velocity to {self.target_velocity}")
         return SetFloatResponse(success=True, message=f"Target velocity set to {self.target_velocity}")
 
-    def transform_twist(self, twist, transform):
-        """
-        Transforms a geometry_msgs/Twist message from one frame to another.
-
-        :param twist: The Twist message to transform.
-        :param transform: The transform to apply.
-        :return: The transformed Twist message.
-        """
-        # Create a Vector3Stamped message for the linear and angular components of the twist message
-        twist_linear = Vector3Stamped()
-        twist_linear.vector = twist.linear
-        twist_angular = Vector3Stamped()
-        twist_angular.vector = twist.angular
-
-        # Transform the linear and angular components of the twist message
-        twist_linear_transformed = tf2_geometry_msgs.do_transform_vector3(twist_linear, transform)
-        twist_angular_transformed = tf2_geometry_msgs.do_transform_vector3(twist_angular, transform)
-
-        # Create a new Twist message and assign the transformed components to it
-        twist_transformed = Twist()
-        twist_transformed.linear = twist_linear_transformed.vector
-        twist_transformed.angular = twist_angular_transformed.vector
-
-        return twist_transformed
-
     def odom_cb(self, msg):
-        """
-        Callback function for handling new odometry messages. The robot's current position and heading are stored in
-        class variables after transforming to the base_link frame.
-
-        :param msg: The incoming odometry message.
-        """
-        child_frame_id = msg.child_frame_id
-        frame_id = msg.header.frame_id
-
-        pose_stamped = PoseStamped()
-        pose_stamped.header = msg.header
-        pose_stamped.pose = msg.pose.pose
-
-        twist_stamped = TwistStamped()
-        twist_stamped.header = msg.header
-        twist_stamped.twist = msg.twist.twist
-        # print(f"twist: \n{msg.twist.twist.linear}")
-
-        try:
-            # We want want the pose in the base_link frame. For SBG the odom is not in base_link
-            transform = self.tf_buffer.lookup_transform('base_link', child_frame_id, rospy.Time())
-            pose_transformed = tf2_geometry_msgs.do_transform_pose(pose_stamped, transform)
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-            rospy.logwarn(f"Failed to find transform from [{frame_id}] to [base_link] frame")
-            return
-        try:
-            # We want the twist in the base_link frame and odometry is published in some world frame
-            transform = self.tf_buffer.lookup_transform('base_link', frame_id, rospy.Time())
-            twist_transformed = self.transform_twist(twist_stamped.twist, transform)
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-            rospy.logwarn(f"Failed to find transform from [{frame_id}] to [base_link] frame")
-            return
-
-        # print(f"\nOriginal: {msg.pose.pose}")
         with self.odom_lock:
             self.odom = msg
-            self.odom = Odometry()
-            self.odom.header = msg.header
-            self.odom.child_frame_id = "base_link"
-            self.odom.pose.pose = pose_transformed.pose
-            self.odom.twist.twist = twist_transformed
-
 
     def publish_cmd_drive(self, left, right):
         self.cmd_drive.left = left

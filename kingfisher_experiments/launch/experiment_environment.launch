@@ -1,18 +1,16 @@
 <launch>
 
+
+  <!-- cmd_drive mux -->
   <node pkg="topic_tools" type="mux" name="mux_drive"
   args="cmd_drive teleop/cmd_drive rl_agent/cmd_drive velocity_tracker/cmd_drive mux:=drive_mux"/>
 
-  <!-- rosrun joy joy_node _autorepeat_rate:=20 -->
-  <node pkg="joy" type="joy_node" name="joy_node" output="screen">
-    <param name="dev" type="string" value="/dev/input/js0"/>
-    <!-- <param name="deadzone" type="double" value="0.1"/> -->
-    <param name="autorepeat_rate" type="double" value="20.0"/>
-  </node>
-
+  <!-- teleop node -->
   <node pkg="kingfisher_teleop" type="cmd_drive_teleop.py" name="teleop" output="screen">
+
     <remap from="~joy" to="/joy"/>
     <!-- <remap from="~cmd_drive" to="/cmd_drive"/> -->
+
 
     <param name="left_axis_v" value="1"/>
     <param name="right_axis_h" value="3"/>
@@ -28,6 +26,18 @@
     <param name="forward_max_turbo" value="0.9"/>
     <param name="reverse_min" value="-0.5"/>
     <param name="reverse_max" value="-0.9"/>
+  </node>
+
+  <!-- odometry transformer -->
+  <node pkg="kingfisher_experiments" type="odom_transform.py" name="odom_transform" output="screen">
+    <remap from="~odom" to="/pose_gt"/> <!-- /imu/odometry | /pose_gt -->
+    <remap from="~transformed_odom" to="/local_odom"/>
+  </node>
+
+  <!-- velocity tracker -->
+    <node pkg="kingfisher_experiments" type="velocity_tracker.py" name="velocity_tracker" output="screen">
+    <!-- <remap from="~cmd_drive" to="/cmd_drive"/> -->
+    <remap from="~odom" to="/local_odom"/> <!-- /imu/odometry | /pose_gt -->
   </node>
 
 </launch>
