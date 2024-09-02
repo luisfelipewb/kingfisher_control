@@ -3,7 +3,7 @@
 
   <!-- cmd_drive mux -->
   <node pkg="topic_tools" type="mux" name="mux_drive"
-  args="cmd_drive teleop/cmd_drive rl_agent/cmd_drive velocity_tracker/cmd_drive mux:=drive_mux"/>
+  args="cmd_drive teleop/cmd_drive control_agent/cmd_drive velocity_tracker/cmd_drive mux:=drive_mux"/>
 
   <!-- teleop node -->
   <node pkg="kingfisher_teleop" type="cmd_drive_teleop.py" name="teleop" output="screen">
@@ -22,10 +22,10 @@
     <param name="mux_button" value="7"/>
 
     <param name="forward_min" value="0.4"/>
-    <param name="forward_max" value="0.5"/>
-    <param name="forward_max_turbo" value="0.9"/>
+    <param name="forward_max" value="0.6"/>
+    <param name="forward_max_turbo" value="1.0"/>
     <param name="reverse_min" value="-0.5"/>
-    <param name="reverse_max" value="-0.9"/>
+    <param name="reverse_max" value="-1.0"/>
   </node>
 
   <!-- odometry transformer -->

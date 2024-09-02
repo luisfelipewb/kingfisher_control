@@ -2,14 +2,20 @@
 
   <arg name="config" default="ASV_PPOcontinuous_MLP.yaml"/>
   <arg name="policy" default="ASV_GoThroughPosition.pth"/>
+  <arg name="simulation" default="true"/>
+  <arg name="cmd_topic" default="/control_agent/cmd_drive"/>
+  <arg name="odom_topic" default="/local_odom"/>
+  <arg name="goal_topic" default="/move_base_simple/goal"/>
+  <arg name="status_topic" default="/agent_status"/>
 
-  <node pkg="kingfisher_rl" type="capture_agent.py" name="rl_agent" output="screen">
-    <remap from="~goal" to="/move_base_simple/goal"/>
+  <node pkg="kingfisher_rl" type="capture_agent.py" name="rl_agent">
+    <remap from="~goal" to="$(arg goal_topic)"/>
     <!-- <remap from="~cmd_drive" to="/cmd_drive"/> -->
-    <remap from="~odom" to="/pose_gt"/> <!-- /imu/odometry | /pose_gt -->
-    <remap from="~rl_status" to="/rl_status"/>
+    <remap from="~odom" to="$(arg odom_topic)"/> <!-- /imu/odometry | /pose_gt -->
+    <remap from="~rl_status" to="$(arg status_topic)"/>
+    <remap from="~cmd_drive" to="$(arg cmd_topic)"/>
 
-    <param name="/rosconsole/logger_level" value="debug" />
+
     <param name="config_file" value="$(arg config)"/>
     <param name="policy_file" value="$(arg policy)"/>
     <param name="dist_threshold" value="0.3"/>

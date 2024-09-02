@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- Records all listed topics on a specified bagfile. -->
+<launch>
+  <arg name="base_dir"/>
+  <arg name="exp_name"/>
+  <arg name="split_duration"/>
+    <!--arg name:="xp_name"-->
+  <node pkg="rosbag" type="record" name="rosbag_recorder"
+      args="record -o $(arg base_dir)/$(arg exp_name) --split --duration=$(arg split_duration)s 
+        /odom
+        /cmd_drive
+        /pose_gt
+        /map
+      "/>
+  <!--
+  /agent_status
+  -->
+  
+</launch>

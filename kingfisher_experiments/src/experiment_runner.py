@@ -38,15 +38,27 @@ class ExperimentRunner:
         self.odom = None
         self.vel_threshold = rospy.get_param('~vel_threshold', 0.1)
 
+        self.start_button = rospy.get_param('~start_button', 0)
+        self.repeat_button = rospy.get_param('~repeat_button', 3)
+        self.skip_button = rospy.get_param('~skip_button', 1)
+        self.exp_name = rospy.get_param('~exp_name', 'exp')
 
+        self.start_prev = 1
+        self.repeat_prev = 1
+        self.skip_prev = 1
+        self.start_pressed = False
+        self.repeat_pressed = False
+        self.skip_pressed = False
+
+        self.mux_select = rospy.get_param('~mux_input', 'control_agent/cmd_drive')
         self.cmd_drive = Drive()
         self.joy_sub = rospy.Subscriber('joy', Joy, self.joy_callback)
         self.cmd_drive_pub = rospy.Publisher('~cmd_drive', Drive, queue_size=1)
         self.goal_publisher = rospy.Publisher('/move_base_simple/goal', PoseStamped, queue_size=10)
-
+        self.experiment_name_publisher = rospy.Publisher('~experiment_name', String, queue_size=1)
 
         rospy.Subscriber("~odom", Odometry, self.odom_cb, queue_size=1)
-        rospy.Subscriber('/rl_status', Bool, self.status_cb)
+        rospy.Subscriber('~status_topic', Bool, self.status_cb)
 
         self.drive_mux_srv = rospy.ServiceProxy('/drive_mux/select', MuxSelect)
         self.target_vel_srv = rospy.ServiceProxy('/velocity_tracker/set_target_velocity', SetFloat)
@@ -100,10 +112,17 @@ class ExperimentRunner:
 
 
     def joy_callback(self, joy_msg):
-        # placeholder for the joy callback to control exeperiment execution
-        return
-        self.call_mux(joy_msg.buttons[self.mux_button])
-        self.publish_cmd_drive(left, right)
+        # Update status of the buttons
+        if joy_msg.buttons[self.start_button] and not self.start_prev:
+            self.start_pressed = True
+        if joy_msg.buttons[self.repeat_button] and not self.repeat_prev:
+            self.repeat_pressed = True
+        if joy_msg.buttons[self.skip_button] and not self.skip_prev:
+            self.skip_pressed = True
+
+        self.start_prev = joy_msg.buttons[self.start_button]
+        self.repeat_prev = joy_msg.buttons[self.repeat_button]
+        self.skip_prev = joy_msg.buttons[self.skip_button]
 
 
     def generate_goal(self, dist, angle):
@@ -124,7 +143,7 @@ class ExperimentRunner:
 
         try:
             self.target_vel_srv(v0)
-            rospy.loginfo(f"Set target velocity to {v0}")
+            rospy.loginfo(f"Target velocity to {v0}")
         except rospy.ServiceException as e:
             rospy.logwarn("Service call failed: %s" % e)
 
@@ -140,14 +159,32 @@ class ExperimentRunner:
             rospy.sleep(0.1)
         rospy.loginfo(f"Reached target velocity {v0}")
 
-    def run_next(self, experiment):
+    def check_for_skip(self):
+        self.skip_pressed = False
+        self.start_pressed = False
+        rospy.loginfo("Press A to start, B to skip...")
+        while not self.start_pressed and not self.skip_pressed:
+            rospy.sleep(0.1)
+        if self.skip_pressed:
+            rospy.loginfo("Skipping the experiment...")
+            return True
+        else:
+            return False
 
-        v0 = experiment['v0']
-        dist = experiment['dist']
-        bearing = experiment['bearing']
+    def check_for_repeat(self):
+        self.repeat_pressed = False
+        self.start_pressed = False
+        rospy.loginfo("Press A for next, Y to repeat...")
+        while not self.repeat_pressed and not self.start_pressed:
+            rospy.sleep(0.1)
+        if self.repeat_pressed:
+            rospy.loginfo("Repeating the experiment...")
+            return True
+        else:
+            return False
 
-        rospy.loginfo(f"Reaching target velocity {v0}")
-        self.reach_velocity(v0)
+
+    def run_next(self, v0, dist, bearing):
 
         rospy.loginfo(f"Publishing a goal with dist: {dist}, angle {bearing}")
         next_goal = self.generate_goal(dist, bearing)
@@ -155,29 +192,55 @@ class ExperimentRunner:
         self.running = True
 
         # Pass the mux to the rl_agent
-        self.select_mux('rl_agent/cmd_drive')
+        self.select_mux(self.mux_select)
+        experiment_string = f"{self.exp_name}_v{v0}_d{dist}_b{bearing}"
 
         rospy.logdebug(f"status {self.running}")
         while self.running:
             rospy.sleep(0.1)
             rospy.loginfo_throttle(5, "Agent running...")
-            rospy.sleep(1.0) # wait for the agent to finish and self.running to be updated
+            self.experiment_name_publisher.publish(experiment_string)
 
+    def run_experiments(self, experiments):
 
+        experiment_index = 0
+        total_experiments = len(experiments)
+
+        while experiment_index < total_experiments:
+            experiment = experiments[experiment_index]
+
+            v0 = experiment['v0']
+            dist = experiment['dist']
+            bearing = experiment['bearing']
+
+            # Run the experiment
+            rospy.loginfo(f"Experiment {experiment_index}/{total_experiments}: v0: {v0}, dist: {dist}, bearing: {bearing}")
+
+            skip = self.check_for_skip()
+            if skip:
+                experiment_index += 1
+                continue
+            else:
+                self.reach_velocity(v0)
+                self.run_next(v0, dist, bearing)
+
+            # Repeat the experiment if needed
+            if self.check_for_repeat():
+                continue
+            else:
+                experiment_index += 1
 
 
 
 if __name__ == '__main__':
 
     runner = ExperimentRunner()
-    rate = rospy.Rate(1)
 
     try:
-        for experiment in runner.experiments:
-            runner.run_next(experiment)
-            rospy.loginfo("Finished experiments, stopping the boat...")
-            runner.reach_velocity(0.0)
-            rospy.loginfo("Done!")
+        runner.run_experiments(runner.experiments)
+        rospy.loginfo("Finished experiments, stopping the boat...")
+        runner.reach_velocity(0.0)
+        rospy.loginfo("Done!")
 
     except rospy.ROSInterruptException:
         pass
