@@ -8,7 +8,7 @@ def generate_experiments_yaml():
     # Define the experiments data
 
     v0s = [0.0, 1.0]
-    dists = [3, 6, 9]
+    dists = [3, 9]
     bearings = [-45 , 0, 45]
 
     experiments = []

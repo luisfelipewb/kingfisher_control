@@ -2,7 +2,7 @@
 
 import rospy
 from geometry_msgs.msg import TwistStamped, PoseStamped, Twist, Vector3Stamped
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, String
 from nav_msgs.msg import Odometry
 from heron_msgs.msg import Drive
 import tf2_geometry_msgs
@@ -35,6 +35,7 @@ class RLAgent:
 
         rl_config = rospy.get_param("~config_file", "test.yaml")
         rl_policy = rospy.get_param("~policy_file", "test.pth")
+        self.model_name = (f"{rl_config}-{rl_policy}").replace(".", "_")
 
         self.dist_threshold = rospy.get_param("~dist_threshold", 0.3)
         self.control_freq = rospy.get_param("~control_freq", 20.0)
@@ -78,6 +79,8 @@ class RLAgent:
         self.cmd_drive_pub_ = rospy.Publisher("~cmd_drive", Drive, queue_size=1)
         self.rl_status_pub_ = rospy.Publisher("~rl_status", Bool, queue_size=1)
         self.marker_pub = rospy.Publisher("~goal_marker", Marker, queue_size = 1)
+        self.rl_model_name = rospy.Publisher('~rl_model_name', String, queue_size=1)
+
 
         self.odom_lock = threading.Lock()
         self.goal_lock = threading.Lock()
@@ -94,70 +97,12 @@ class RLAgent:
         self.marker.color.a = 0.8
         self.marker.header.frame_id = "base_link"
 
-    def transform_twist(self, twist, transform):
-        """
-        Transforms a geometry_msgs/Twist message from one frame to another.
-
-        :param twist: The Twist message to transform.
-        :param transform: The transform to apply.
-        :return: The transformed Twist message.
-        """
-        # Create a Vector3Stamped message for the linear and angular components of the twist message
-        twist_linear = Vector3Stamped()
-        twist_linear.vector = twist.linear
-        twist_angular = Vector3Stamped()
-        twist_angular.vector = twist.angular
-
-        # Transform the linear and angular components of the twist message
-        twist_linear_transformed = tf2_geometry_msgs.do_transform_vector3(twist_linear, transform)
-        twist_angular_transformed = tf2_geometry_msgs.do_transform_vector3(twist_angular, transform)
-
-        # Create a new Twist message and assign the transformed components to it
-        twist_transformed = Twist()
-        twist_transformed.linear = twist_linear_transformed.vector
-        twist_transformed.angular = twist_angular_transformed.vector
-
-        return twist_transformed
-
     def odom_cb(self, msg):
         """
-        Callback function for handling new odometry messages. The robot's current position and heading are stored in
-        class variables after transforming to the base_link frame.
-
-        :param msg: The incoming odometry message.
+        Assumption: The odometry message is in the base_link frame.
         """
-        child_frame_id = msg.child_frame_id
-        frame_id = msg.header.frame_id
-        
-        pose_stamped = PoseStamped()
-        pose_stamped.header = msg.header
-        pose_stamped.pose = msg.pose.pose
-
-        twist_stamped = TwistStamped()
-        twist_stamped.header = msg.header
-        twist_stamped.twist = msg.twist.twist
-        # print(f"twist: \n{msg.twist.twist.linear}")
-
-        try:
-            # We want want the pose in the base_link frame. For SBG the odom is not in base_link
-            transform = self.tf_buffer.lookup_transform('base_link', child_frame_id, rospy.Time())
-            pose_transformed = tf2_geometry_msgs.do_transform_pose(pose_stamped, transform)
-            # We want the twist in the base_link frame and odometry published in the world frame
-            transform = self.tf_buffer.lookup_transform('base_link', frame_id, rospy.Time())
-            twist_transformed = self.transform_twist(twist_stamped.twist, transform)
-
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-            rospy.logwarn(f"Failed to find transform from [{frame_id}] to [base_link] frame")
-            return
-
-        # print(f"\nOriginal: {msg.pose.pose}")
         with self.odom_lock:
             self.odom = msg
-            self.odom = Odometry()
-            self.odom.header = msg.header
-            self.odom.child_frame_id = "base_link"
-            self.odom.pose.pose = pose_transformed.pose
-            self.odom.twist.twist = twist_transformed
 
     def goal_cb(self, msg):
         # store the goal in the world frame
@@ -318,6 +263,7 @@ class RLAgent:
         # Publish the actions
         self.publish_cmds(tl, tr)
         self.rl_status_pub_.publish(Bool(True))
+        self.rl_model_name.publish(String(self.model_name))
 
 
 if __name__ == '__main__':

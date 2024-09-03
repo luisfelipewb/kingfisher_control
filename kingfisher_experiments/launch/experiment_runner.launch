@@ -12,7 +12,7 @@
   <arg name="distance_threshold" default="0.3"/>\
   <arg name="status_topic" default="/agent_status"/>
   <arg name="cmd_topic" default="/control_agent/cmd_drive"/>
-  <arg name="exp_file" default="sample.yaml"/>
+  <arg name="exp_file" default="experiments.yaml"/>
 
   <!-- Experiment Runner -->
   <node pkg="kingfisher_experiments" type="experiment_runner.py" name="experiment_runner" output="screen">
