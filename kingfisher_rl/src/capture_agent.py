@@ -62,6 +62,7 @@ class RLAgent:
         self.goal_robot = None
         self.goal_world = None
         self.odom = None
+        self.world_frame = None
         self.odom_timeout = rospy.Duration(1.0)
         self.goal_timeout = rospy.Duration(60.0)
 
@@ -103,12 +104,13 @@ class RLAgent:
         """
         with self.odom_lock:
             self.odom = msg
+        self.world_frame = msg.header.frame_id
 
     def goal_cb(self, msg):
         # store the goal in the world frame
         with self.goal_lock:
             try:
-                transform = self.tf_buffer.lookup_transform('odom', msg.header.frame_id, rospy.Time())
+                transform = self.tf_buffer.lookup_transform(self.world_frame, msg.header.frame_id, rospy.Time())
                 goal_transformed = tf2_geometry_msgs.do_transform_pose(msg, transform)
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 rospy.logwarn(f"Failed to find transform goal from [{self.goal_world.header.frame_id}] to [base_link] frame")
