@@ -2,6 +2,9 @@
 *.pyc
 *.swp
 
+# Weitght files
+*.pth
+
 # IDEs
 .vscode/c_cpp_properties.json
 .vscode/settings.json

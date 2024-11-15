@@ -4,7 +4,7 @@ import rospy
 from geometry_msgs.msg import TwistStamped, PoseStamped, Twist, Vector3Stamped
 from std_msgs.msg import Bool, String
 from nav_msgs.msg import Odometry
-from heron_msgs.msg import Drive
+from kingfisher_msgs.msg import Drive
 import tf2_geometry_msgs
 import tf2_ros
 import rospkg
@@ -146,7 +146,7 @@ class RLAgent:
         self._obs_buffer[0,-1, 2] = torch.tensor(robot_ang_vel, device=self.device)
         self._obs_buffer[0,-1, 3:5] = torch.tensor(goal_cos_sin, device=self.device)
         self._obs_buffer[0,-1, 5] = torch.tensor(goal_distance, device=self.device)
-        self._obs_buffer[0,-1, 6] = torch.tensor(0.8, device=self.device)
+        self._obs_buffer[0,-1, 6] = torch.tensor(0.0, device=self.device)
         self._obs_buffer_flat = self._obs_buffer.view(1,-1).clone()
 
         obs = dict({"state":self._obs_buffer_flat})

@@ -7,10 +7,55 @@
     <!--arg name:="xp_name"-->
   <node pkg="rosbag" type="record" name="rosbag_recorder"
       args="record -o $(arg base_dir)/$(arg exp_name) --split --duration=$(arg split_duration)s 
-        /odom
-        /cmd_drive
-        /pose_gt
-        /map
+	  /agent_status
+	  /cmd_drive
+	  /cmd_vel
+	  /control_agent/cmd_drive
+	  /drive_mux/selected
+	  /experiment_name
+	  /experiment_runner/cmd_drive
+	  /has_wifi
+	  /imu/data
+	  /imu/mag
+	  /imu/nav_sat_fix
+	  /imu/pos_ecef
+	  /imu/temp
+	  /imu/utc_ref
+	  /imu/velocity
+	  /joy
+	  /kingfisher/parameter_descriptions
+	  /kingfisher/parameter_updates
+	  /local_odom
+	  /map
+	  /motor_enable
+	  /move_base_simple/goal
+	  /odom
+	  /pose_gt
+	  /record
+	  /reverse_time_ms
+	  /rl_agent/goal_marker
+	  /rl_agent/rl_model_name
+	  /rosout
+	  /rosout_agg
+	  /sbg/ekf_euler
+	  /sbg/ekf_nav
+	  /sbg/ekf_quat
+	  /sbg/gps_hdt
+	  /sbg/gps_pos
+	  /sbg/gps_raw
+	  /sbg/gps_vel
+	  /sbg/imu_data
+	  /sbg/mag
+	  /sbg/ship_motion
+	  /sbg/status
+	  /sbg/utc_time
+	  /sbg_localization_processor/odometry
+	  /sense
+	  /mpc/trajectory_predicted
+	  /teleop/cmd_drive
+	  /tf
+	  /tf_static
+	  /velocity_tracker/cmd_drive
       "/>
   <!--
   /agent_status

@@ -1,37 +1,46 @@
 experiments:
-- bearing: -45
-  dist: 3
-  v0: 0.0
 - bearing: 0
   dist: 3
-  v0: 0.0
-- bearing: 45
+  v0: 0.5
+- bearing: -30
   dist: 3
-  v0: 0.0
-- bearing: -45
-  dist: 9
-  v0: 0.0
-- bearing: 0
-  dist: 9
-  v0: 0.0
-- bearing: 45
-  dist: 9
-  v0: 0.0
+  v0: 0.5
+- bearing: 30
+  dist: 3
+  v0: 0.5
 - bearing: -45
   dist: 3
-  v0: 1.0
-- bearing: 0
-  dist: 3
-  v0: 1.0
+  v0: 0.5
 - bearing: 45
   dist: 3
-  v0: 1.0
+  v0: 0.5
+- bearing: 0
+  dist: 6
+  v0: 0.5
+- bearing: -30
+  dist: 6
+  v0: 0.5
+- bearing: 30
+  dist: 6
+  v0: 0.5
+- bearing: -45
+  dist: 6
+  v0: 0.5
+- bearing: 45
+  dist: 6
+  v0: 0.5
+- bearing: 0
+  dist: 9
+  v0: 0.5
+- bearing: -30
+  dist: 9
+  v0: 0.5
+- bearing: 30
+  dist: 9
+  v0: 0.5
 - bearing: -45
   dist: 9
-  v0: 1.0
-- bearing: 0
-  dist: 9
-  v0: 1.0
+  v0: 0.5
 - bearing: 45
   dist: 9
-  v0: 1.0
+  v0: 0.5

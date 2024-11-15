@@ -3,7 +3,7 @@
 import rospy
 
 from sensor_msgs.msg import Joy
-from heron_msgs.msg import Drive
+from kingfisher_msgs.msg import Drive
 from std_msgs.msg import String
 from topic_tools.srv import MuxSelect
 from geometry_msgs.msg import TwistStamped, PoseStamped, Twist, Vector3Stamped
@@ -32,7 +32,7 @@ class ExperimentRunner:
         self.send_goal = rospy.get_param('~send_goal_button', 7)
         self.send_goal_prev = None
 
-        self.running = True # Assume the agent is running to prevent taking control over it.
+        self.running = None # Start as None and way for the first status message.
 
         self.odom_lock = threading.Lock()
         self.odom = None
@@ -66,7 +66,13 @@ class ExperimentRunner:
         experiments_file = rospy.get_param('~experiments_file', "sample.yaml")
         self.experiments = self.load_experiments(experiments_file)
 
+        self.wait_for_status()
         self.wait_for_odom()
+
+    def wait_for_status(self):
+        while self.running is None:
+            rospy.loginfo_throttle(1, "Waiting for status...")
+            rospy.sleep(0.1)
 
     def load_experiments(self, file_path):
         # append the file path to the package path
@@ -187,19 +193,33 @@ class ExperimentRunner:
     def run_next(self, v0, dist, bearing):
 
         rospy.loginfo(f"Publishing a goal with dist: {dist}, angle {bearing}")
+        experiment_string = f"{self.exp_name}_v{v0}_d{dist}_b{bearing}"
+        self.experiment_name_publisher.publish(experiment_string)
+
         next_goal = self.generate_goal(dist, bearing)
         self.goal_publisher.publish(next_goal)
         self.running = True
 
+        start_time = rospy.Time.now().to_sec()
         # Pass the mux to the rl_agent
         self.select_mux(self.mux_select)
-        experiment_string = f"{self.exp_name}_v{v0}_d{dist}_b{bearing}"
 
         rospy.logdebug(f"status {self.running}")
+        rospy.sleep(0.8)
         while self.running:
-            rospy.sleep(0.1)
-            rospy.loginfo_throttle(5, "Agent running...")
             self.experiment_name_publisher.publish(experiment_string)
+            rospy.sleep(0.1)
+            # rospy.loginfo_throttle(5, "Agent running...")
+        end_time = rospy.Time.now().to_sec()
+        normalized_time = (end_time - start_time) / dist
+        rospy.logwarn(f"Experiment time: {end_time - start_time:.2f} Normalized time: {normalized_time:.2f}")
+        with open('/home/kingfisher/experiment_log.csv', 'a') as file:
+            writer = csv.writer(file)
+            duration = round(end_time - start_time, 2)
+            normalized_time = round(normalized_time, 2)
+            writer.writerow([experiment_string, v0, dist, bearing, duration, normalized_time])
+
+
 
     def run_experiments(self, experiments):
 
@@ -221,6 +241,8 @@ class ExperimentRunner:
                 experiment_index += 1
                 continue
             else:
+                experiment_string = f"{self.exp_name}_v{v0}_d{dist}_b{bearing}"
+                self.experiment_name_publisher.publish(experiment_string)
                 self.reach_velocity(v0)
                 self.run_next(v0, dist, bearing)
 
@@ -229,6 +251,7 @@ class ExperimentRunner:
                 continue
             else:
                 experiment_index += 1
+            rospy.sleep(1)
 
 
 

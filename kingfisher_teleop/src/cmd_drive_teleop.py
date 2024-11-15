@@ -2,7 +2,7 @@
 
 import rospy
 
-from heron_msgs.msg import Drive
+from kingfisher_msgs.msg import Drive
 from sensor_msgs.msg import Joy
 
 from topic_tools.srv import MuxSelect

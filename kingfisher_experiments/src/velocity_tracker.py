@@ -4,7 +4,7 @@ import rospy
 
 from std_msgs.msg import Float32
 from geometry_msgs.msg import TwistStamped, PoseStamped, Twist, Vector3Stamped
-from heron_msgs.msg import Drive
+from kingfisher_msgs.msg import Drive
 from nav_msgs.msg import Odometry
 
 from kingfisher_experiments.srv import SetFloat, SetFloatResponse
