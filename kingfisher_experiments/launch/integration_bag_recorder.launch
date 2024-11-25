@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- Records all listed topics on a specified bagfile. -->
+<launch>
+  <arg name="base_dir" default="/home/kingfisher/bags/2024-11-27_perception_integration"/>
+  <arg name="exp_name" default="exp"/>
+  <arg name="split_duration" default="600"/>
+    <!--arg name:="xp_name"-->
+  <node pkg="rosbag" type="record" name="rosbag_recorder"
+      args="record -o $(arg base_dir)/$(arg exp_name) --split --duration=$(arg split_duration)s 
+	/agent_status
+	/arena_camera_node/camera_info
+	/arena_camera_node/image_raw
+	/clicked_point
+	/cmd_drive
+	/cmd_vel
+	/diagnostics
+	/goal_marker
+	/goal_marker_array
+	/has_wifi
+	/imu/data
+	/imu/mag
+	/imu/nav_sat_fix
+	/imu/pos_ecef
+	/imu/tempn
+	/imu/utc_ref
+	/imu/velocity
+	/kf_drive_viz/marker
+	/kingfisher/parameter_descriptions
+	/kingfisher/parameter_updates
+	/lidar/scan
+	/local_odom
+	/motor_enable
+	/move_base_simple/goal
+	/rl_agent/goal_marker
+	/rl_agent/rl_model_name
+	/rosout
+	/rosout_agg
+	/sbg/ekf_euler
+	/sbg/ekf_nav
+	/sbg/ekf_quat
+	/sbg/gps_hdt
+	/sbg/gps_pos
+	/sbg/gps_raw
+	/sbg/gps_vel
+	/sbg/imu_data
+	/sbg/mag
+	/sbg/ship_motion
+	/sbg/status
+	/sbg/utc_time
+	/sbg_localization_processor/odometry
+	/sense
+	/tf
+	/tf_static
+	/waste_detector/detections
+    "/>
+  <!--
+  /agent_status
+  -->
+  
+</launch>

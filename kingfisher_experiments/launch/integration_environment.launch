@@ -1,0 +1,13 @@
+<launch>
+
+  <!-- Localization enviroment -->
+  <include file="$(find sbg_driver)/launch/sbg_device.launch"/>
+  <include file="$(find sbg_localization_manager)/launch/sbg_localization_processor.launch"/>
+
+  <!-- odometry transformer -->
+  <node pkg="kingfisher_experiments" type="odom_transform.py" name="odom_transform" output="screen">
+    <remap from="~odom" to="/sbg_localization_processor/odometry"/> <!-- /imu/odometry | /pose_gt -->
+    <remap from="~transformed_odom" to="/local_odom"/>
+  </node>
+
+</launch>
