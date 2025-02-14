@@ -1,7 +1,7 @@
 <launch>
 
   <node pkg="kingfisher_experiments" type="odom_transform.py" name="odom_transform" output="screen">
-    <remap from="~odom" to="/pose_gt"/> <!-- /imu/odometry | /pose_gt -->
+    <remap from="~odom" to="/sbg_localization_processor/odometry"/> <!-- /imu/odometry | /pose_gt -->
     <remap from="~transformed_odom" to="/local_odom"/>
   </node>
 
