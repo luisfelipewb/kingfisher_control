@@ -43,8 +43,8 @@ class RLAgent:
         self.dist_threshold = rospy.get_param("~dist_threshold", 0.3)
         self.control_freq = rospy.get_param("~control_freq", 20.0)
 
-        self.anti_goal_p1 = rospy.get_param("~anti_goal_p1", 0.1)
-        self.anti_goal_p2 = rospy.get_param("~anti_goal_p2", 0.1)
+        self.anti_goal_p1 = rospy.get_param("~anti_goal_p1", 0.0)
+        self.anti_goal_p2 = rospy.get_param("~anti_goal_p2", 0.0)
 
         config_folder = rospkg.RosPack().get_path('kingfisher_neuralparc') + "/config/"
         self.rl_config_path = config_folder+rl_config
@@ -170,7 +170,7 @@ class RLAgent:
         # store the goal in the world frame
         with self.goal_lock:
             try:
-                transform = self.tf_buffer.lookup_transform('odom', msg.header.frame_id, rospy.Time())
+                transform = self.tf_buffer.lookup_transform('utm_local_lake', msg.header.frame_id, rospy.Time())
                 goal_transformed = tf2_geometry_msgs.do_transform_pose(msg, transform)
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 rospy.logwarn(f"Failed to find transform goal from [{self.goal_world.header.frame_id}] to [base_link] frame")
@@ -199,20 +199,19 @@ class RLAgent:
         if self.init_goal_distance is None:
             self.init_goal_distance = goal_distance
 
-        
         # Update the buffer with the new observation
         self._obs_buffer[0,0:2] = torch.tensor(robot_vel, device=self.device)
         self._obs_buffer[0,2] = torch.tensor(robot_ang_vel, device=self.device)
         self._obs_buffer[0,3] = torch.tensor(goal_distance, device=self.device)
         self._obs_buffer[0,4:6] = torch.tensor(goal_cos_sin, device=self.device)
-        self._obs_buffer[0,6] = torch.tensor(self.init_goal_distance, device=self.device)
-        self._obs_buffer[0,7:9] = torch.tensor(self.init_goal_cos_sin, device=self.device)
-        self._obs_buffer[0,9] = torch.tensor(self.anti_goal_p1, device=self.device) 
-        self._obs_buffer[0,10] = torch.tensor(self.anti_goal_p2, device=self.device)
+        self._obs_buffer[0,6] = torch.tensor(self.init_goal_distance, device=self.device) * 0
+        self._obs_buffer[0,7:9] = torch.tensor(self.init_goal_cos_sin, device=self.device) * 0 
+        self._obs_buffer[0,9] = torch.tensor(self.anti_goal_p1, device=self.device) * 0
+        self._obs_buffer[0,10] = torch.tensor(self.anti_goal_p2, device=self.device) * 0
 
         rospy.loginfo_throttle(1, f"obs_buffer[0,0:2]: {self._obs_buffer[0,0:2]}")
         rospy.loginfo_throttle(1, f"obs_buffer[0,2]  : {self._obs_buffer[0,2]}")
-        rospy.loginfo_throttle(1, f"obs_buffer[0,3]  : {self._obs_buffer[0,4]}")
+        rospy.loginfo_throttle(1, f"obs_buffer[0,3]  : {self._obs_buffer[0,3]}")
         rospy.loginfo_throttle(1, f"obs_buffer[0,4:5]: {self._obs_buffer[0,4:6]}")
         rospy.loginfo_throttle(1, f"obs_buffer[0,6]  : {self._obs_buffer[0,6]}")
         rospy.loginfo_throttle(1, f"obs_buffer[0,7:9]: {self._obs_buffer[0,7:9]}")
