@@ -66,6 +66,10 @@ class ExperimentRunner:
         experiments_file = rospy.get_param('~experiments_file', "sample.yaml")
         self.experiments = self.load_experiments(experiments_file)
 
+        rospack = rospkg.RosPack()
+        self.logpath = rospack.get_path('kingfisher_experiments') + '/experiment_log.csv'
+
+
         self.wait_for_status()
         self.wait_for_odom()
 
@@ -213,7 +217,7 @@ class ExperimentRunner:
         end_time = rospy.Time.now().to_sec()
         normalized_time = (end_time - start_time) / dist
         rospy.logwarn(f"Experiment time: {end_time - start_time:.2f} Normalized time: {normalized_time:.2f}")
-        with open('/home/kingfisher/experiment_log.csv', 'a') as file:
+        with open(self.logpath, 'a') as file:
             writer = csv.writer(file)
             duration = round(end_time - start_time, 2)
             normalized_time = round(normalized_time, 2)

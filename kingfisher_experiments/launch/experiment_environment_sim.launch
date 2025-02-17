@@ -1,10 +1,5 @@
 <launch>
 
-
-  <!-- cmd_drive mux -->
-  <node pkg="topic_tools" type="mux" name="mux_drive"
-  args="cmd_drive teleop/cmd_drive control_agent/cmd_drive velocity_tracker/cmd_drive mux:=drive_mux"/>
-
   <!-- odometry transformer -->
   <node pkg="kingfisher_experiments" type="odom_transform.py" name="odom_transform" output="screen">
     <remap from="~odom" to="/pose_gt"/> <!-- /imu/odometry | /pose_gt -->
@@ -16,5 +11,8 @@
     <!-- <remap from="~cmd_drive" to="/cmd_drive"/> -->
     <remap from="~odom" to="/local_odom"/> <!-- /imu/odometry | /pose_gt -->
   </node>
+
+  <!-- joystick driver -->
+  <include file="$(find kingfisher_teleop)/launch/kingfisher_teleop.launch"/>
 
 </launch>

@@ -86,7 +86,7 @@ wait_experiment_to_finish() {
 
 start_mpc() {
     rosservice call /gazebo/reset_world
-    roslaunch kingfisher_experiments experiment_runner.launch mpc:=true exp_name:="mpc$name" base_dir:="/home/luis/workspaces/bags/sim" exp_file:=$exp &
+    roslaunch kingfisher_experiments experiment_runner_sim.launch mpc:=true exp_name:="mpc$name" base_dir:="/home/luis/workspaces/bags/sim" exp_file:=$exp &
     AGENT_PID=$!
     sleep 10
     echo "MPC started."
@@ -95,7 +95,7 @@ start_mpc() {
 
 start_rl() {
     rosservice call /gazebo/reset_world
-    roslaunch kingfisher_experiments experiment_runner.launch rl:=true exp_name:="rl$1$name" base_dir:="/home/luis/workspaces/bags/sim" exp_file:=$exp policy:=$2 &
+    roslaunch kingfisher_experiments experiment_runner_sim.launch rl:=true exp_name:="rl$1$name" base_dir:="/home/luis/workspaces/bags/sim" exp_file:=$exp policy:=$2 &
     AGENT_PID=$!
     sleep 10
     echo "RL started."
@@ -125,7 +125,7 @@ kill_heron() {
     echo "Heron launch file terminated."
     rosservice call /gazebo/delete_model heron
     rosservice call /gazebo/reset_world
-    slees 2
+    sleep 2
     echo "Heron deleted."
     sleep 1
 }
@@ -176,7 +176,7 @@ test_both() {
 exp="final_large_0.yaml"
 exp="small_experiments.yaml"
 exp="small_experiments.yaml"
-
+exp="experiments.yaml"
 start_environment
 
 
@@ -185,7 +185,7 @@ name="_default"
 default_values
 launch_heron
 test_rl high high_dr_last.pth
-test_mpc
+# test_mpc
 kill_heron
 
 # name="_cog000"
