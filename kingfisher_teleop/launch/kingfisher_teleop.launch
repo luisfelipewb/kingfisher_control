@@ -1,7 +1,7 @@
 <launch>
 
   <node pkg="topic_tools" type="mux" name="mux_drive"
-  args="cmd_drive teleop/cmd_drive rl_agent/cmd_drive velocity_tracker/cmd_drive mux:=drive_mux"/>
+  args="cmd_drive teleop/cmd_drive control_agent/cmd_drive velocity_tracker/cmd_drive mux:=drive_mux"/>
 
   <!-- rosrun joy joy_node _autorepeat_rate:=20 -->
   <node pkg="joy" type="joy_node" name="joy_node" output="screen">

@@ -2,7 +2,7 @@
 <!-- This launch file is for policies trained with isaac lab and the model is exported to onnx -->
   <arg name="onnx_path" default="rl_games/kingfisher_direct.onnx"/>
   <arg name="simulation" default="true"/>
-  <arg name="cmd_topic" default="/rl_agent/cmd_drive"/>
+  <arg name="cmd_topic" default="/control_agent/cmd_drive"/>
   <arg name="odom_topic" default="/local_odom"/>
   <arg name="goal_topic" default="/move_base_simple/goal"/>
   <arg name="status_topic" default="/agent_status"/>

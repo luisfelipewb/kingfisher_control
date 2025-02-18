@@ -49,6 +49,7 @@ class ExperimentRunner:
         self.start_pressed = False
         self.repeat_pressed = False
         self.skip_pressed = False
+        self.non_stop = rospy.get_param('~non_stop', False)
 
         self.mux_select = rospy.get_param('~mux_input', 'control_agent/cmd_drive')
         self.cmd_drive = Drive()
@@ -160,16 +161,18 @@ class ExperimentRunner:
         # pass the control to the velocity tracker
         self.select_mux('velocity_tracker/cmd_drive')
 
-        vel_error = 1.0
+        vel_error = 10.0
         while vel_error > self.vel_threshold:
             with self.odom_lock:
                 current_velocity = self.odom.twist.twist.linear.x
             vel_error = abs(v0 - current_velocity)
             rospy.loginfo_throttle(1, f"Current velocity: {current_velocity:.2f} error: {vel_error:.2f}")
             rospy.sleep(0.1)
-        rospy.loginfo(f"Reached target velocity {v0}")
+        rospy.loginfo(f"Reached target velocity {v0}({current_velocity:.2f})")
 
     def check_for_skip(self):
+        if self.non_stop:
+            return False
         self.skip_pressed = False
         self.start_pressed = False
         rospy.loginfo("Press A to start, B to skip...")
@@ -182,6 +185,8 @@ class ExperimentRunner:
             return False
 
     def check_for_repeat(self):
+        if self.non_stop:
+            return False
         self.repeat_pressed = False
         self.start_pressed = False
         rospy.loginfo("Press A for next, Y to repeat...")

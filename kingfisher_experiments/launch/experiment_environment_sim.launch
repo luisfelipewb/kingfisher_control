@@ -9,7 +9,7 @@
   <!-- velocity tracker -->
     <node pkg="kingfisher_experiments" type="velocity_tracker.py" name="velocity_tracker" output="screen">
     <!-- <remap from="~cmd_drive" to="/cmd_drive"/> -->
-    <remap from="~odom" to="/local_odom"/> <!-- /imu/odometry | /pose_gt -->
+    <remap from="~odom" to="/local_odom"/>
   </node>
 
   <!-- joystick driver -->

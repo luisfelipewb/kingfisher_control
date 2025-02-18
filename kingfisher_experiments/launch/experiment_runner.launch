@@ -1,24 +1,19 @@
 <launch>
 
   <!-- Arguments -->
-  <arg name="base_dir" default="/home/kingfisher/bags"/>
+  <arg name="base_dir" default="/tmp"/>
   <arg name="exp_name" default="experiment_name"/>
-  <arg name="mpc" default="false"/>
-  <arg name="rl" default="false"/>
-  <arg name="np" default="false"/>
   <arg name="simulation" default="false"/>
-  <arg name="config" default="ASV_PPOcontinuous_MLP.yaml"/>
-  <arg name="policy" default="ASV_GoThroughPosition.pth"/>
   <arg name="distance_threshold" default="0.3"/>
   <arg name="status_topic" default="/agent_status"/>
   <arg name="cmd_topic" default="/control_agent/cmd_drive"/>
   <arg name="exp_file" default="experiments.yaml"/>
-
+  <arg name="non_stop" default="false"/>
 
   <!-- Experiment Runner -->
   <node pkg="kingfisher_experiments" type="experiment_runner.py" name="experiment_runner" output="screen">
     <remap from="~goal" to="/move_base_simple/goal"/>
-    <remap from="~odom" to="/local_odom"/> <!-- /imu/odometry | /pose_gt -->
+    <remap from="~odom" to="/local_odom"/>
     <remap from="~status_topic" to="$(arg status_topic)"/>
     <remap from="~experiment_name" to="/experiment_name"/>
 
@@ -26,56 +21,15 @@
     <param name="~experiments_file" value="$(arg exp_file)"/>
     <param name="~send_goal_button" value="7"/>
     <param name="~exp_name" value="$(arg exp_name)"/>
+    <param name="~vel_threshold" value="0.1"/>
+    <param name="~non_stop" value="$(arg non_stop)"/>
 
   </node>
-
-  <!-- MPC -->
-  <group if="$(arg mpc)">
-    <include file="$(find mpc_kingfisher)/launch/controller.launch">
-      <arg name="cmd_topic" value="$(arg cmd_topic)"/>
-      <arg name="state_odom_topic" value="/local_odom"/>
-      <arg name="goal_topic" value="/move_base_simple/goal"/>
-      <arg name="status_topic" value="$(arg status_topic)"/>
-      <arg name="control_rate" value="20."/>
-      <arg name="distance_threshold" value="$(arg distance_threshold)"/>
-      <arg name="timeout" value="60."/>
-      <arg name="max_thrust" value="19.5"/>
-      <arg name="min_thrust" value="-4"/>
-      <arg name="is_simu" value="$(arg simulation)"/>
-      <arg name="use_lookup_table" value="true"/>
-    </include>
-  </group>
-
-  <!-- RL -->
-  <group if="$(arg rl)">
-    <include file="$(find kingfisher_rl)/launch/capture_agent.launch">
-      <arg name="config" value="$(arg config)"/>
-      <arg name="policy" value="$(arg policy)"/>
-      <arg name="simulation" value="$(arg simulation)"/>
-      <arg name="cmd_topic" value="$(arg cmd_topic)"/>
-      <arg name="odom_topic" value="/local_odom"/>
-      <arg name="goal_topic" value="/move_base_simple/goal"/>
-      <arg name="status_topic" value="$(arg status_topic)"/>
-
-    </include>
-  </group>
-
-    <!-- Neural Parc -->
-  <group if="$(arg np)">
-    <include file="$(find kingfisher_neuralparc)/launch/neuralparc_agent.launch">
-      <arg name="config" value="$(arg config)"/>
-      <arg name="policy" value="$(arg policy)"/>
-      <arg name="cmd_topic" value="$(arg cmd_topic)"/>
-      <arg name="odom_topic" value="/local_odom"/>
-      <arg name="goal_topic" value="/move_base_simple/goal"/>
-      <arg name="status_topic" value="$(arg status_topic)"/>
-    </include>
-  </group>
 
   <!-- Bag Recorder -->
   <include file="$(find kingfisher_experiments)/launch/bag_recorder.launch">
     <arg name="base_dir" value="$(arg base_dir)" />
     <arg name="exp_name" value="$(arg exp_name)" />
-    <arg name="split_duration" value="60" />
+    <arg name="split_duration" value="6000" />
   </include>
 </launch>
