@@ -28,6 +28,10 @@
     <param name="reverse_max" value="-1.0"/>
   </node>
 
+  <!-- sbg -->
+  <include file="$(find sbg_driver)/launch/sbg_device.launch"/>
+  <!-- sbg_manager -->
+  <include file="$(find sbg_localization_manager)/launch/sbg_localization_processor.launch"/>
   <!-- odometry transformer -->
   <node pkg="kingfisher_experiments" type="odom_transform.py" name="odom_transform" output="screen">
     <remap from="~odom" to="/sbg_localization_processor/odometry"/> <!-- /imu/odometry | /pose_gt -->
@@ -37,7 +41,7 @@
   <!-- velocity tracker -->
     <node pkg="kingfisher_experiments" type="velocity_tracker.py" name="velocity_tracker" output="screen">
     <!-- <remap from="~cmd_drive" to="/cmd_drive"/> -->
-    <remap from="~odom" to="/local_odom"/> <!-- /imu/odometry | /pose_gt -->
+    <remap from="~odom" to="/local_odom"/>
   </node>
 
 </launch>
