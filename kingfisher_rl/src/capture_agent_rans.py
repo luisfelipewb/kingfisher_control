@@ -60,7 +60,7 @@ class RLAgent:
         self.odom = None
         self.world_frame = None
         self.odom_timeout = rospy.Duration(1.0)
-        self.goal_timeout = rospy.Duration(60.0)
+        self.goal_timeout = rospy.Duration(600.0)
 
         self.lin_vel = [0.0, 0.0]
         self.ang_vel = [0.0]
@@ -264,7 +264,7 @@ class RLAgent:
             dist = np.linalg.norm(np.array([self.goal_robot.pose.position.x, self.goal_robot.pose.position.y]))
             rospy.loginfo_throttle(1, "Distance to goal: %.2f" % dist)
             if dist < self.dist_threshold:
-                return True
+                return False
                 
             return False
 
