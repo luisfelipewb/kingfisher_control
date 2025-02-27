@@ -21,7 +21,8 @@
 
     <param name="drive_button" value="4"/>
     <param name="direct_drive_button" value="5"/>
-    <param name="mux_button" value="7"/>
+    <param name="agent_mux_button" value="6"/>
+    <param name="teleop_mux_button" value="7"/>
 
     <param name="forward_min" value="0.4"/>
     <param name="forward_max" value="0.5"/>

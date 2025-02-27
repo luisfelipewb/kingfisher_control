@@ -14,11 +14,12 @@ class CmdDriveTeleop:
         rospy.init_node('cmd_drive_teleop')
 
 
-        self.acc_button = rospy.get_param('~acc_button', 7)
-        self.turn_button = rospy.get_param('~turn_button', 6)
+        self.acc_axis = rospy.get_param('~acc_axis', 7)
+        self.turn_axis = rospy.get_param('~turn_axis', 6)
         self.drive_button = rospy.get_param('~drive_button', 4)
         self.direct_drive_button = rospy.get_param('~direct_drive_button', 5)
-        self.mux_button = rospy.get_param('~mux_button', 7)
+        self.agent_mux_button = rospy.get_param('~agent_mux_button', 6)
+        self.teleop_mux_button = rospy.get_param('~teleop_mux_button', 7)
 
         self.left_axis_v = rospy.get_param('~left_axis_v', 1)
         self.right_axis_h = rospy.get_param('~right_axis_h', 3)
@@ -33,7 +34,9 @@ class CmdDriveTeleop:
         self.forward_max_turbo = rospy.get_param('~forward_max_turbo', 1.0)
 
         self.current_fw_max = self.forward_max
-        self.start_prev = None
+        self.teleop_prev = None
+        self.auto_prev = None
+
 
         self.cmd_drive = Drive()
         self.joy_sub = rospy.Subscriber('joy', Joy, self.joy_callback)
@@ -55,19 +58,30 @@ class CmdDriveTeleop:
             return_value = self.reverse_min + value * (self.reverse_min - self.reverse_max)
         return return_value
 
-    def call_mux(self, start):
-        if start == 1 and self.start_prev == 0:
+    def call_teleop_mux(self, start):
+        if start == 1 and self.teleop_prev == 0:
             try:
                 self.drive_mux_service('teleop/cmd_drive')
                 rospy.loginfo("Select teleop input")
             except rospy.ServiceException as e:
                 rospy.logwarn("Service call failed: %s" % e)
 
-        self.start_prev = start
+        self.teleop_prev = start
+
+    def call_auto_mux(self, start):
+        if start == 1 and self.auto_prev == 0:
+            try:
+                self.drive_mux_service('control_agent/cmd_drive')
+                rospy.loginfo("Select auto input")
+            except rospy.ServiceException as e:
+                rospy.logwarn("Service call failed: %s" % e)
+
+        self.auto_prev = start
 
     def joy_callback(self, joy_msg):
 
-        self.call_mux(joy_msg.buttons[self.mux_button])
+        self.call_teleop_mux(joy_msg.buttons[self.teleop_mux_button])
+        self.call_auto_mux(joy_msg.buttons[self.agent_mux_button])
 
         left, right = 0.0, 0.0
         
@@ -76,7 +90,7 @@ class CmdDriveTeleop:
         if joy_msg.buttons[self.drive_button] == 1:
 
             # Forward 
-            if joy_msg.axes[self.acc_button] > 0.1:
+            if joy_msg.axes[self.acc_axis] > 0.1:
                 left = self.current_fw_max
                 right = self.current_fw_max
                 # throttle for fine heading control
@@ -86,7 +100,7 @@ class CmdDriveTeleop:
                 elif steer > 0.1: # turn left
                     left = left * (1 - abs(steer))
             # Reverse
-            elif joy_msg.axes[self.acc_button] < -0.1:
+            elif joy_msg.axes[self.acc_axis] < -0.1:
                 left = self.reverse_max
                 right = self.reverse_max
                 # throttle for fine heading control
@@ -96,11 +110,11 @@ class CmdDriveTeleop:
                 elif steer > 0.1: # turn left
                     left = left * (1 - abs(steer))
             # Turn Left
-            elif joy_msg.axes[self.turn_button] > 0.1:
+            elif joy_msg.axes[self.turn_axis] > 0.1:
                 left = self.reverse_max
                 right = 0.5
             # Turn Right
-            elif joy_msg.axes[self.turn_button] < -0.1:
+            elif joy_msg.axes[self.turn_axis] < -0.1:
                 left = 0.5
                 right = self.reverse_max
             else:
