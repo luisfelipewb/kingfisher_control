@@ -61,7 +61,7 @@ class CmdDriveTeleop:
     def call_teleop_mux(self, start):
         if start == 1 and self.teleop_prev == 0:
             try:
-                self.drive_mux_service('teleop/cmd_drive')
+                self.drive_mux_service('teleop/cmd_drive') # TODO: Change to a parameter
                 rospy.loginfo("Select teleop input")
             except rospy.ServiceException as e:
                 rospy.logwarn("Service call failed: %s" % e)
@@ -71,7 +71,7 @@ class CmdDriveTeleop:
     def call_auto_mux(self, start):
         if start == 1 and self.auto_prev == 0:
             try:
-                self.drive_mux_service('control_agent/cmd_drive')
+                self.drive_mux_service('control_agent/cmd_drive') # TODO: Change to a parameter
                 rospy.loginfo("Select auto input")
             except rospy.ServiceException as e:
                 rospy.logwarn("Service call failed: %s" % e)

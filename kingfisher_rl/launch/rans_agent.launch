@@ -3,17 +3,11 @@
   <arg name="cmd_topic" default="/control_agent/cmd_drive"/>
   <arg name="odom_topic" default="/local_odom"/>
   <arg name="goal_topic" default="/move_base_simple/goal"/>
-  <arg name="status_topic" default="/agent_status"/>
 
-  <node pkg="kingfisher_rl" type="capture_agent_rans.py" name="rl_agent" output="screen">
+  <node pkg="kingfisher_rl" type="rans_agent.py" name="rl_agent" output="screen">
     <remap from="~goal" to="$(arg goal_topic)"/>
     <remap from="~odom" to="$(arg odom_topic)"/>
-    <remap from="~rl_status" to="$(arg status_topic)"/>
     <remap from="~cmd_drive" to="$(arg cmd_topic)"/>
-
-    <param name="dist_threshold" value="0.3"/>
-    <param name="control_freq" value="20"/>
-    <param name="obs_buffer_len" value="1"/>
   </node>
 
 </launch>
