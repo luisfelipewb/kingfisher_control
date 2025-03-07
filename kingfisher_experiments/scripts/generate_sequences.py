@@ -10,7 +10,9 @@ def generate_experiments_yaml():
 
     v0s = [0.5]
     num_points = 6
-    space = 8
+    space = 5
+    length = 8
+    width = 4
     
     experiments = []
         
@@ -30,8 +32,18 @@ def generate_experiments_yaml():
         # points += [p1, p2, p3, p4]
 
         # line 
-        for n in range(num_points):
-            points += [[n*space/2, 0]]
+        # for n in range(num_points):
+        #     points += [[n*space/2, 0]]
+
+        # grid
+        for w in range(width):
+            for l in range(length):
+                y = w * space
+                if w % 2 == 0:
+                    x = l*space
+                else:
+                    x = ((length-1) - l) * space # reverse direction
+                points += [[x, y]]
 
     # for v0 in v0s:
     #     for n in range(num_points):
@@ -50,7 +62,7 @@ def generate_experiments_yaml():
         os.makedirs(config_path)
 
     # Path to the experiments.yaml file
-    yaml_file_path = os.path.join(config_path, 'line.yaml')
+    yaml_file_path = os.path.join(config_path, 'grid.yaml')
 
     # Write the experiments data to the YAML file
     with open(yaml_file_path, 'w') as yaml_file:

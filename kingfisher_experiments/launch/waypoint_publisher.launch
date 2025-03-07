@@ -1,0 +1,38 @@
+<launch>
+
+  <!-- Arguments -->
+  <arg name="base_dir" default="/tmp"/>
+  <arg name="exp_name" default="experiment_name"/>
+  <arg name="simulation" default="false"/>
+  <arg name="distance_threshold" default="0.3"/>
+  <arg name="status_topic" default="/agent_status"/>
+  <arg name="cmd_topic" default="/control_agent/cmd_drive"/>
+  <arg name="exp_file" default="experiments.yaml"/>
+  <arg name="non_stop" default="false"/>
+
+  <!-- goal mux -->
+  <node pkg="topic_tools" type="mux" name="mux_goal"
+  args="goal move_base_simple/goal waste_detector/goal waypoint_publisher/goal mux:=mux_goal"/>
+
+   <!-- cmd_drive mux -->
+  <!-- <node pkg="topic_tools" type="mux" name="mux_drive"
+  args="cmd_drive teleop/cmd_drive control_agent/cmd_drive velocity_tracker/cmd_drive mux:=drive_mux"/> -->
+
+  <!-- Experiment Runner -->
+  <node pkg="kingfisher_experiments" type="waypoint_publisher.py" name="waypoint_publisher" output="screen">
+    <!-- <remap from="~goal" to="/waypoint_publisher/goal"/> -->
+    <remap from="~monitor_goal1" to="/waste_detector/goal"/>
+    <remap from="~monitor_goal2" to="/move_base_simple/goal"/>
+    <remap from="~odom" to="/local_odom"/>
+    <!-- <remap from="~status_topic" to="$(arg status_topic)"/> -->
+    <!-- <remap from="~experiment_name" to="/experiment_name"/> -->
+    <param name="~mux_input" value="control_agent/cmd_drive"/>
+  </node>
+
+  <!-- Bag Recorder -->
+  <!-- <include file="$(find kingfisher_experiments)/launch/bag_recorder.launch">
+    <arg name="base_dir" value="$(arg base_dir)" />
+    <arg name="exp_name" value="$(arg exp_name)" />
+    <arg name="split_duration" value="6000" />
+  </include> -->
+</launch>

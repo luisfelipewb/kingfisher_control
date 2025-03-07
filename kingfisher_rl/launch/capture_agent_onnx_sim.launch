@@ -4,7 +4,7 @@
   <arg name="simulation" default="true"/>
   <arg name="cmd_topic" default="/control_agent/cmd_drive"/>
   <arg name="odom_topic" default="/local_odom"/>
-  <arg name="goal_topic" default="/move_base_simple/goal"/>
+  <arg name="goal_topic" default="/goal"/>
   <arg name="status_topic" default="/agent_status"/>
 
   <node pkg="kingfisher_rl" type="capture_agent_onnx.py" name="rl_agent" output="screen">

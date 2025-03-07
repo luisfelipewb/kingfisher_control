@@ -14,5 +14,6 @@
 
   <!-- joystick driver -->
   <include file="$(find kingfisher_teleop)/launch/kingfisher_teleop.launch"/>
+  <include file="$(find kingfisher_teleop)/launch/joy.launch"/>
 
 </launch>

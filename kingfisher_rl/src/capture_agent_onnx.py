@@ -69,7 +69,8 @@ class RLAgent:
         self.odom = None
         self.world_frame = None
         self.odom_timeout = rospy.Duration(1.0)
-        self.goal_timeout = rospy.Duration(60.0)
+        goal_timeout_value = rospy.get_param("~goal_timeout", 5.0)
+        self.goal_timeout = rospy.Duration(goal_timeout_value)
 
         self.lin_vel = [0.0, 0.0]
         self.ang_vel = [0.0]

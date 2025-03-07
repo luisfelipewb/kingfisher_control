@@ -3,13 +3,6 @@
   <node pkg="topic_tools" type="mux" name="mux_drive"
   args="cmd_drive teleop/cmd_drive control_agent/cmd_drive velocity_tracker/cmd_drive mux:=drive_mux"/>
 
-  <!-- rosrun joy joy_node _autorepeat_rate:=20 -->
-  <node pkg="joy" type="joy_node" name="joy_node" output="screen">
-    <param name="dev" type="string" value="/dev/input/js0"/>
-    <!-- <param name="deadzone" type="double" value="0.1"/> -->
-    <param name="autorepeat_rate" type="double" value="20.0"/>
-  </node>
-
   <node pkg="kingfisher_teleop" type="cmd_drive_teleop.py" name="teleop" output="screen">
     <remap from="~joy" to="/joy"/>
     <!-- <remap from="~cmd_drive" to="/cmd_drive"/> -->
@@ -21,8 +14,8 @@
 
     <param name="drive_button" value="4"/>
     <param name="direct_drive_button" value="5"/>
-    <param name="agent_mux_button" value="6"/>
-    <param name="teleop_mux_button" value="7"/>
+    <param name="agent_mux_button" value="7"/>
+    <param name="teleop_mux_button" value="6"/>
 
     <param name="forward_min" value="0.4"/>
     <param name="forward_max" value="0.5"/>

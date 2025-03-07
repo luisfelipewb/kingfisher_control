@@ -39,7 +39,7 @@ class GoalPublisher:
 
         # Define the publisher
         self.marker_publisher = rospy.Publisher('/goal_marker', Marker, queue_size=1)
-        self.goal_publisher = rospy.Publisher('/move_base_simple/goal', PoseStamped, queue_size=1)
+        self.goal_publisher = rospy.Publisher('/waste_detector/goal', PoseStamped, queue_size=1)
 
         # Subscribes to a point cloud image
         self.point_cloud_sub = rospy.Subscriber('/waste_detector/detections', PointCloud2, self.point_cloud_cb)
