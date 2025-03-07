@@ -10,23 +10,12 @@
   <arg name="exp_file" default="experiments.yaml"/>
   <arg name="non_stop" default="false"/>
 
-  <!-- goal mux -->
-  <node pkg="topic_tools" type="mux" name="mux_goal"
-  args="goal move_base_simple/goal waste_detector/goal waypoint_publisher/goal mux:=mux_goal"/>
-
-   <!-- cmd_drive mux -->
-  <!-- <node pkg="topic_tools" type="mux" name="mux_drive"
-  args="cmd_drive teleop/cmd_drive control_agent/cmd_drive velocity_tracker/cmd_drive mux:=drive_mux"/> -->
 
   <!-- Experiment Runner -->
   <node pkg="kingfisher_experiments" type="waypoint_publisher.py" name="waypoint_publisher" output="screen">
-    <!-- <remap from="~goal" to="/waypoint_publisher/goal"/> -->
     <remap from="~monitor_goal1" to="/waste_detector/goal"/>
     <remap from="~monitor_goal2" to="/move_base_simple/goal"/>
     <remap from="~odom" to="/local_odom"/>
-    <!-- <remap from="~status_topic" to="$(arg status_topic)"/> -->
-    <!-- <remap from="~experiment_name" to="/experiment_name"/> -->
-    <param name="~mux_input" value="control_agent/cmd_drive"/>
   </node>
 
   <!-- Bag Recorder -->

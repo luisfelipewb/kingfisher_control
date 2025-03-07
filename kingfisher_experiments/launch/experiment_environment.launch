@@ -4,6 +4,9 @@
   <!-- cmd_drive mux -->
   <node pkg="topic_tools" type="mux" name="mux_drive"
   args="cmd_drive teleop/cmd_drive control_agent/cmd_drive velocity_tracker/cmd_drive mux:=drive_mux"/>
+  <!-- goal mux -->
+  <node pkg="topic_tools" type="mux" name="mux_goal"
+  args="goal move_base_simple/goal waste_detector/goal waypoint_publisher/goal mux:=mux_goal"/>
 
   <!-- teleop node -->
   <include file="$(find kingfisher_teleop)/launch/kingfisher_teleop.launch"/>
