@@ -1,8 +1,5 @@
 <launch>
 
-  <node pkg="topic_tools" type="mux" name="mux_drive"
-  args="cmd_drive teleop/cmd_drive control_agent/cmd_drive velocity_tracker/cmd_drive mux:=drive_mux"/>
-
   <node pkg="kingfisher_teleop" type="cmd_drive_teleop.py" name="teleop" output="screen">
     <remap from="~joy" to="/joy"/>
     <!-- <remap from="~cmd_drive" to="/cmd_drive"/> -->
