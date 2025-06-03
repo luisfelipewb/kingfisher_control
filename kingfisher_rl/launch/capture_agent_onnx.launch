@@ -1,10 +1,11 @@
 <launch>
 <!-- This launch file is for policies trained with isaac lab and the model is exported to onnx -->
-  <arg name="onnx_path" default="rl_games/kingfisher_direct.onnx"/>
+  <arg name="onnx_path" default="rsl_rl/kingfisher_direct/v0-seed42/exported/policy.onnx"/>
   <arg name="cmd_topic" default="/control_agent/cmd_drive"/>
   <arg name="odom_topic" default="/local_odom"/>
   <arg name="goal_topic" default="/goal"/>
   <arg name="status_topic" default="/agent_status"/>
+  <arg name="goal_timeout" default="30"/>
 
   <node pkg="kingfisher_rl" type="capture_agent_onnx.py" name="rl_agent" output="screen">
     <remap from="~goal" to="$(arg goal_topic)"/>
@@ -16,7 +17,7 @@
     <param name="dist_threshold" value="0.3"/>
     <param name="control_freq" value="10"/>
     <param name="obs_buffer_len" value="1"/>
-    <param name="goal_timeout" value="5"/>
+    <param name="goal_timeout" value="$(arg goal_timeout)"/>
   </node>
 
 </launch>
