@@ -117,16 +117,11 @@ class RLAgent:
         # store the goal in the world frame
         with self.goal_lock:
             try:
-                transform = self.tf_buffer.lookup_transform(self.world_frame, msg.header.frame_id, rospy.Time())
-                goal_transformed = tf2_geometry_msgs.do_transform_pose(msg, transform)
+                transform = self.tf_buffer.lookup_transform(self.world_frame, msg.header.frame_id, msg.header.stamp)
+                self.goal_world = tf2_geometry_msgs.do_transform_pose(msg, transform)
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-                rospy.logwarn(f"Failed to find transform goal from [{self.goal_world.header.frame_id}] to [base_link] frame")
+                rospy.logwarn(f"Failed to find transform goal from [{self.goal_world.header.frame_id}] to [{self.world_frame}] frame")
                 return
-
-            self.goal_world = goal_transformed
-            # During field tests, time might not be synchronized with the computer running rviz.
-            self.goal_world.header.stamp = rospy.Time.now()
-
         return
 
     def get_observations(self):
@@ -243,15 +238,14 @@ class RLAgent:
             """
             try:
                 with self.goal_lock:
-                    transform = self.tf_buffer.lookup_transform('base_link', self.goal_world.header.frame_id, rospy.Time())
-                    msg_transformed = tf2_geometry_msgs.do_transform_pose(self.goal_world, transform)
+                    transform = self.tf_buffer.lookup_transform('base_link', self.goal_world.header.frame_id, rospy.Time(0))
+                    self.goal_robot = tf2_geometry_msgs.do_transform_pose(self.goal_world, transform)
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 rospy.logwarn(f"Failed to find transform goal from [{self.goal_world.header.frame_id}] to [base_link] frame")
                 return
 
-            self.goal_robot = msg_transformed
             # Publish marker to debug goal position
-            self.marker.header.stamp = rospy.Time.now()
+            self.marker.header.stamp = self.goal_robot.header.stamp
             self.marker.pose = self.goal_robot.pose
             self.marker_pub.publish(self.marker)
 
