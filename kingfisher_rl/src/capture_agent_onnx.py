@@ -51,7 +51,7 @@ class RLAgent:
         self.goal_timeout = rospy.Duration(goal_timeout_value)
 
         # Initialize np arrays for observations
-        self.prev_actions = np.zeros((1,2), dtype=np.float32)
+        self.actions = np.zeros((1,2), dtype=np.float32)
         self.lin_vel = np.zeros((1,2), dtype=np.float32)
         self.ang_vel = np.zeros((1,1), dtype=np.float32)
         self.goal_cos_sin = np.zeros((1,2), dtype=np.float32) # cos, sin
@@ -114,8 +114,7 @@ class RLAgent:
         goal_cos_sin = [math.cos(goal_bearing), math.sin(goal_bearing)]
 
         # Copy the computed values to the observations buffers
-        # TODO: Removeh ardcoded values for the observations for testing
-        self.prev_actions[0] = [0.0, 0.0]
+        # self.actions[0]= is already updated when actions are computed
         self.lin_vel[0] = robot_vel # 2
         self.ang_vel[0] = robot_ang_vel  # 1
         self.goal_cos_sin[0] = goal_cos_sin  # 2
@@ -124,7 +123,7 @@ class RLAgent:
 
         observations = np.concatenate(
             [
-                self.prev_actions,  # 2
+                self.actions,  # 2
                 self.lin_vel,  # 2
                 self.ang_vel,  # 1
                 self.goal_cos_sin,  # 2
@@ -140,21 +139,16 @@ class RLAgent:
      
         output = self.ort_model.run(None, obs)
         action = np.clip(output[0].squeeze(0), -1, 1)
+        self.actions[0] = action
 
-        tl = float(action[0])
-        tr = float(action[1])
+        return
 
-        return tl, tr
 
-    def publish_cmds(self, thruster_left, thruster_right):
+    def publish_cmds(self):
+
         msg = Drive()
-
-        msg.left = 0.0
-        msg.right = 0.0
-        if isinstance(thruster_left, float):     
-            msg.left = thruster_left
-        if isinstance(thruster_right, float):     
-            msg.right = thruster_right
+        msg.left = float(self.actions[0][0])
+        msg.right = float(self.actions[0][1])
 
         self.cmd_drive_pub_.publish(msg)
 
@@ -228,7 +222,8 @@ class RLAgent:
     def control_loop(self):
 
         if self.check_pre_conditions() == False:
-            self.publish_cmds(0.0, 0.0)
+            self.actions[0] = [0.0, 0.0]
+            self.publish_cmds()
             self.rl_status_pub_.publish(Bool(False))
             return
         
@@ -238,10 +233,10 @@ class RLAgent:
         obs = self.get_observations()
 
         # Get actions from the policy
-        tl, tr = self.get_action(obs)
-        self.prev_actions[0] = [tl, tr]
+        self.get_action(obs)
+
         # Publish the actions
-        self.publish_cmds(tl, tr)
+        self.publish_cmds()
         self.rl_status_pub_.publish(Bool(True))
         self.rl_model_name.publish(String(self.model_name))
 
