@@ -2,7 +2,6 @@
 
 import rospy
 from sensor_msgs.msg import PointCloud2
-from visualization_msgs.msg import Marker
 from geometry_msgs.msg import PoseStamped
 
 import sensor_msgs.point_cloud2 as pc2
@@ -15,34 +14,16 @@ class GoalPublisher:
 
         rospy.init_node('goal_publisher', log_level=rospy.DEBUG)
 
-
-        # Marker definition
-        self.goal_marker = Marker()
-        self.goal_marker.header.frame_id = "base_link"
-        self.goal_marker.type = Marker.ARROW
-        self.goal_marker.action = Marker.ADD
-        self.goal_marker.scale.x = -0.5
-        self.goal_marker.scale.y = 0.1
-        self.goal_marker.scale.z = 0.1
-        self.goal_marker.color.a = 0.8
-        self.goal_marker.color.r = 1.0
-        self.goal_marker.color.g = 0.0
-        self.goal_marker.color.b = 0.0
-        self.goal_marker.pose.orientation.x = 0.0
-        self.goal_marker.pose.orientation.y = 0.7068252
-        self.goal_marker.pose.orientation.z = 0.0
-        self.goal_marker.pose.orientation.w = 0.7068252
+        self.max_goal_distance = rospy.get_param('~max_goal_distance', 5.0)
 
         # Move base simple goal message definition
         self.goal_msg = PoseStamped()
 
-
         # Define the publisher
-        self.marker_publisher = rospy.Publisher('/goal_marker', Marker, queue_size=1)
-        self.goal_publisher = rospy.Publisher('/waste_detector/goal', PoseStamped, queue_size=1)
+        self.goal_publisher = rospy.Publisher('~goal', PoseStamped, queue_size=1)
 
         # Subscribes to a point cloud image
-        self.point_cloud_sub = rospy.Subscriber('/waste_detector/detections', PointCloud2, self.point_cloud_cb)
+        self.point_cloud_sub = rospy.Subscriber('~detections', PointCloud2, self.point_cloud_cb)
 
 
     def update_local_frame(self, msg):
@@ -87,6 +68,10 @@ class GoalPublisher:
         else:
             rospy.logdebug("No valid points in the point cloud")
 
+        if min_distance > self.max_goal_distance:
+            rospy.logwarn(f"Selected goal is too far: {min_distance}m (max allowed: {self.max_goal_distance}m)")
+            return None
+
         return goal_pose
     
 
@@ -102,13 +87,6 @@ class GoalPublisher:
         selected_goal = self.select_goal(updated_msg)
 
         if selected_goal is not None:
-            # Publish the goal marker
-            self.goal_marker.pose.position = selected_goal.pose.position
-            self.goal_marker.header.stamp = selected_goal.header.stamp
-            self.marker_publisher.publish(self.goal_marker)
-            rospy.logdebug("Published goal marker")
-
-            # Publish the goal
             self.goal_publisher.publish(selected_goal)
 
 

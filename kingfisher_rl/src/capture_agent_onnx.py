@@ -243,11 +243,12 @@ class RLAgent:
 
 if __name__ == '__main__':
 
-    rl_agent = RLAgent()
-    rate = rospy.Rate(rl_agent.control_freq)
+    try:
+        rl_agent = RLAgent()
+        rate = rospy.Rate(rl_agent.control_freq)
+        while not rospy.is_shutdown():
+            rl_agent.control_loop()
+            rate.sleep()
 
-    while not rospy.is_shutdown():
-        rl_agent.control_loop()
-        rate.sleep()
-
-
+    except (rospy.ROSInterruptException, KeyboardInterrupt):
+        rospy.loginfo("Shutting down RL agent...")

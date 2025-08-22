@@ -123,9 +123,16 @@ class VelocityTracker:
 if __name__ == '__main__':
 
 
-    velocity_controller = VelocityTracker()
-    rate = rospy.Rate(velocity_controller.rate)
+    try:
+        velocity_controller = VelocityTracker()
 
-    while not rospy.is_shutdown():
-        velocity_controller.control_loop()
-        rate.sleep()
+        rate = rospy.Rate(velocity_controller.rate)
+        while not rospy.is_shutdown():
+            velocity_controller.control_loop()
+            rate.sleep()
+
+    except (rospy.ROSInterruptException, KeyboardInterrupt):
+        rospy.loginfo("Node interrupted")
+    finally:
+        rospy.loginfo("Node exiting")
+

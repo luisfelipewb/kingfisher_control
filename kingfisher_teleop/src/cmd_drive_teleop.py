@@ -146,8 +146,11 @@ class CmdDriveTeleop:
 
 if __name__ == '__main__':
 
-    cmd_drive_teleop = CmdDriveTeleop()
-    rate = rospy.Rate(1)
+    try:
+        cmd_drive_teleop = CmdDriveTeleop()
+        rospy.spin()
 
-    while not rospy.is_shutdown():
-        rate.sleep()
+    except (rospy.ROSInterruptException, KeyboardInterrupt):
+        rospy.loginfo("Node interrupted")
+    finally:
+        rospy.loginfo("Node exiting")

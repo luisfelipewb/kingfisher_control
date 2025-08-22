@@ -1,4 +1,5 @@
 <launch>
+  <arg name="max_goal_distance" default="5.0"/>
 
   <!-- odometry transformer -->
   <node pkg="kingfisher_experiments" type="odom_transform.py" name="odom_transform" output="screen">
@@ -27,6 +28,7 @@
   <node pkg="kingfisher_rl" type="goal_publisher.py" name="goal_publisher" output="screen">
     <remap from="~goal" to="/waste_detector/goal"/>
     <remap from="~detections" to="/waste_detector/detections"/>
+    <param name="max_goal_distance" value="$(arg max_goal_distance)"/>
   </node>
 
 </launch>
