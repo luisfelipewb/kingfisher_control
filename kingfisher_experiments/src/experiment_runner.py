@@ -6,21 +6,20 @@ from sensor_msgs.msg import Joy
 from kingfisher_msgs.msg import Drive
 from std_msgs.msg import String
 from topic_tools.srv import MuxSelect
-from geometry_msgs.msg import TwistStamped, PoseStamped, Twist, Vector3Stamped
+from geometry_msgs.msg import PoseStamped, PointStamped
 from std_msgs.msg import Bool
 from nav_msgs.msg import Odometry
 
-from kingfisher_experiments.srv import SetFloat, SetFloatResponse
+from kingfisher_experiments.srv import SetFloat
 
 import numpy as np
-import tf2_geometry_msgs
-import tf2_ros
 import yaml
 import csv
 
 import threading
 
 import rospkg
+from sensor_msgs.msg import PointField
 
 
 class ExperimentRunner:
@@ -42,6 +41,7 @@ class ExperimentRunner:
         self.repeat_button = rospy.get_param('~repeat_button', 3)
         self.skip_button = rospy.get_param('~skip_button', 1)
         self.exp_name = rospy.get_param('~exp_name', 'exp')
+        self.stable_start_time = rospy.get_param('~stable_start_time', 1.0)
 
         self.start_prev = 1
         self.repeat_prev = 1
@@ -55,7 +55,8 @@ class ExperimentRunner:
         self.cmd_drive = Drive()
         self.joy_sub = rospy.Subscriber('joy', Joy, self.joy_callback)
         self.cmd_drive_pub = rospy.Publisher('~cmd_drive', Drive, queue_size=1)
-        self.goal_publisher = rospy.Publisher('/move_base_simple/goal', PoseStamped, queue_size=10)
+        self.goal_publisher = rospy.Publisher('~goal', PoseStamped, queue_size=1)
+        self.point_publisher = rospy.Publisher('~point', PointStamped, queue_size=1)
         self.experiment_name_publisher = rospy.Publisher('~experiment_name', String, queue_size=1)
 
         rospy.Subscriber("~odom", Odometry, self.odom_cb, queue_size=1)
@@ -64,7 +65,7 @@ class ExperimentRunner:
         self.drive_mux_srv = rospy.ServiceProxy('/drive_mux/select', MuxSelect)
         self.target_vel_srv = rospy.ServiceProxy('/velocity_tracker/set_target_velocity', SetFloat)
 
-        experiments_file = rospy.get_param('~experiments_file', "sample.yaml")
+        experiments_file = rospy.get_param('~experiments_file', "empty.yaml")
         self.experiments = self.load_experiments(experiments_file)
 
         rospack = rospkg.RosPack()
@@ -137,16 +138,31 @@ class ExperimentRunner:
 
 
     def generate_goal(self, dist, angle):
+        """
+        Generates a goal (PoseStamped) and a corresponding point (PointStamped)
+        The goal can be used directly by the RL policy to drive towards a position assuming perfect perception.
+        The point is used by the simulated perception pipeline to add noise.
+        """
+        time = rospy.Time.now()
+
         angle_rad = np.deg2rad(angle)
-        # print(f"angle_rad: {angle_rad}")
         goal = PoseStamped()
         goal.header.frame_id = "base_link"
+        goal.header.stamp = time
         goal.pose.position.x = dist * np.cos(angle_rad)
         goal.pose.position.y = dist * np.sin(angle_rad)
-        # print(f"goal: {goal.pose.position.x}, {goal.pose.position.y}")
         goal.pose.position.z = 0.0
         goal.pose.orientation.w = 1
-        return goal
+
+        # Create a PointStamped message at the goal position
+        point = PointStamped()
+        point.header.frame_id = "base_link"
+        point.header.stamp = time
+        point.point.x = goal.pose.position.x
+        point.point.y = goal.pose.position.y
+        point.point.z = goal.pose.position.z
+
+        return goal, point
 
     def reach_velocity(self, v0):
         # call the velocity tracker to reach the target velocity
@@ -162,13 +178,26 @@ class ExperimentRunner:
         self.select_mux('velocity_tracker/cmd_drive')
 
         vel_error = 10.0
-        while vel_error > self.vel_threshold:
+        stable_start_time = None
+        while True:
             with self.odom_lock:
                 current_velocity = self.odom.twist.twist.linear.x
             vel_error = abs(v0 - current_velocity)
             rospy.loginfo_throttle(1, f"Current velocity: {current_velocity:.2f} error: {vel_error:.2f}")
+
+            # Make sure it stays below the threshold for a given time.
+            if vel_error <= self.vel_threshold:
+                if stable_start_time is None:
+                    stable_start_time = rospy.Time.now()
+                    rospy.loginfo(f"Reached target velocity of {v0}. Actual: {current_velocity:.2f}")
+                elif rospy.Time.now() - stable_start_time >= rospy.Duration(self.stable_start_time):
+                    break
+            else:
+                stable_start_time = None
+                rospy.loginfo(f"Velocity error exceeded threshold: {vel_error:.2f}")
+
             rospy.sleep(0.1)
-        rospy.loginfo(f"Reached target velocity {v0}({current_velocity:.2f})")
+        rospy.loginfo(f"Stable velocity at {current_velocity:.3f} m/s")
 
     def check_for_skip(self):
         if self.non_stop:
@@ -205,8 +234,9 @@ class ExperimentRunner:
         experiment_string = f"{self.exp_name}_v{v0}_d{dist}_b{bearing}"
         self.experiment_name_publisher.publish(experiment_string)
 
-        next_goal = self.generate_goal(dist, bearing)
+        next_goal, next_point = self.generate_goal(dist, bearing)
         self.goal_publisher.publish(next_goal)
+        self.point_publisher.publish(next_point)
         self.running = True
 
         start_time = rospy.Time.now().to_sec()

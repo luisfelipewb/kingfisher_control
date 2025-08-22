@@ -1,46 +1,22 @@
 experiments:
-- bearing: 0
-  dist: 3
-  v0: 0.5
-- bearing: -30
-  dist: 3
-  v0: 0.5
-- bearing: 30
-  dist: 3
-  v0: 0.5
-- bearing: -45
-  dist: 3
-  v0: 0.5
-- bearing: 45
-  dist: 3
-  v0: 0.5
-- bearing: 0
-  dist: 6
-  v0: 0.5
-- bearing: -30
-  dist: 6
-  v0: 0.5
-- bearing: 30
-  dist: 6
-  v0: 0.5
-- bearing: -45
-  dist: 6
-  v0: 0.5
-- bearing: 45
-  dist: 6
-  v0: 0.5
-- bearing: 0
-  dist: 9
-  v0: 0.5
-- bearing: -30
-  dist: 9
-  v0: 0.5
-- bearing: 30
-  dist: 9
-  v0: 0.5
-- bearing: -45
-  dist: 9
-  v0: 0.5
-- bearing: 45
-  dist: 9
-  v0: 0.5
+- {bearing: 0, dist: 3, v0: 0.5}
+- {bearing: -15, dist: 3, v0: 0.5}
+- {bearing: 15, dist: 3, v0: 0.5}
+- {bearing: -30, dist: 3, v0: 0.5}
+- {bearing: 30, dist: 3, v0: 0.5}
+- {bearing: -45, dist: 3, v0: 0.5}
+- {bearing: 45, dist: 3, v0: 0.5}
+- {bearing: 0, dist: 6, v0: 0.5}
+- {bearing: -15, dist: 6, v0: 0.5}
+- {bearing: 15, dist: 6, v0: 0.5}
+- {bearing: -30, dist: 6, v0: 0.5}
+- {bearing: 30, dist: 6, v0: 0.5}
+- {bearing: -45, dist: 6, v0: 0.5}
+- {bearing: 45, dist: 6, v0: 0.5}
+- {bearing: 0, dist: 9, v0: 0.5}
+- {bearing: -15, dist: 9, v0: 0.5}
+- {bearing: 15, dist: 9, v0: 0.5}
+- {bearing: -30, dist: 9, v0: 0.5}
+- {bearing: 30, dist: 9, v0: 0.5}
+- {bearing: -45, dist: 9, v0: 0.5}
+- {bearing: 45, dist: 9, v0: 0.5}

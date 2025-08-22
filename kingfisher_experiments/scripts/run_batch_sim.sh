@@ -1,9 +1,10 @@
 name="opt"
 exp="large_experiments.yaml"
-# ./run_sim_mpc.sh $name $exp
-# ./run_sim_rl.sh $name $exp
+exp_name="ideal"
+base_dir="/home/luis/workspaces/bags_ws/tfr_exp/sim_bags"
 
-
+onnx_path="rsl_rl/kingfisher_direct/2025-08-20_15-58-58_final-seed42/exported/policy.onnx"
+onnx_path="rsl_rl/kingfisher_direct/2025-08-21_14-23-40_nodelay-seed42/exported/policy.onnx"
 
 # Default values
 
@@ -44,7 +45,7 @@ kill_gazebo() {
 }
 
 start_rviz() {
-    rviz -d ~/.rviz/kingfisher_rl.rviz &
+    rviz -d ~/.rviz/kingfisher-sim.rviz &
     RVIZ_PID=$!
     sleep 5
     echo "Rviz started."
@@ -60,7 +61,7 @@ kill_rviz() {
 }
 
 start_environment_nodes() {
-    roslaunch kingfisher_experiments experiment_environment_sim.launch &
+    roslaunch kingfisher_experiments experiment_environment_sim.launch max_goal_distance:=10.0 &
     ENVNODES_PID=$!
     sleep 10
     echo "Environment nodes started."
@@ -84,18 +85,9 @@ wait_experiment_to_finish() {
     sleep 1
 }
 
-start_mpc() {
-    rosservice call /gazebo/reset_world
-    roslaunch kingfisher_experiments experiment_runner_sim.launch mpc:=true exp_name:="mpc$name" base_dir:="/home/luis/workspaces/bags/sim" exp_file:=$exp &
-    AGENT_PID=$!
-    sleep 10
-    echo "MPC started."
-    sleep 1
-}
 
 start_rl() {
-    rosservice call /gazebo/reset_world
-    roslaunch kingfisher_experiments experiment_runner_sim.launch rl:=true exp_name:="rl$1$name" base_dir:="/home/luis/workspaces/bags/sim" exp_file:=$exp policy:=$2 &
+    roslaunch kingfisher_rl capture_agent_onnx.launch onnx_path:=$onnx_path &
     AGENT_PID=$!
     sleep 10
     echo "RL started."
@@ -142,49 +134,62 @@ kill_environment() {
     kill_gazebo
 }
 
+run_experiments() {
+    # This is expected to block until the experiment is finished
+    roslaunch kingfisher_experiments experiment_runner.launch non_stop:=true &
+    echo "Experiment started."
+    EXPERIMENT_PID=$!
+    wait $EXPERIMENT_PID
+    echo "Experiment finished."
+}
+
+start_bag_recorder() {
+    roslaunch kingfisher_experiments bag_recorder.launch base_dir:=$base_dir exp_name:=$exp_name &
+    BAG_RECORDER_PID=$!
+    sleep 2
+    echo "Bag recorder started."
+    sleep 2
+}
+
+stop_bag_recorder() {
+    kill $BAG_RECORDER_PID
+    wait $BAG_RECORDER_PID
+    sleep 1
+    echo "Bag recorder stopped."
+    sleep 1
+}
+
 test_rl() {
     start_rl $1 $2
-    wait_experiment_to_finish
+    start_bag_recorder
+    run_experiments
+    stop_bag_recorder
     kill_agent
 }
 
-test_mpc() {
-    start_mpc
-    wait_experiment_to_finish
-    kill_agent
-}
 
-test_both() {
-    test_rl
-    test_mpc
-}
+# TODO: 
+# Insert the perception nodes
+# simulated_waste
+# fake_detector (with parameters)
+# SWITCH BETWEEN each one (when using perception noise or not)
+# rosservice call /goal_mux/select /move_base_simple/goal
+# rosservice call /goal_mux/select /waste_detector/goal
 
-# Minimum sequence
-# default_values
-# start_environment
-# launch_heron
-# test_both
-# wait_experiment_to_finish
-# kill_heron
-# kill_environment
 
 # name="_optimal"
 
-
 # exp="small_experiments.yaml"
 # exp="tiny_experiments.yaml"
-exp="final_large_0.yaml"
-exp="small_experiments.yaml"
-exp="small_experiments.yaml"
 exp="experiments.yaml"
 start_environment
-
 
 
 name="_default"
 default_values
 launch_heron
 test_rl high high_dr_last.pth
+
 # test_mpc
 kill_heron
 
@@ -196,160 +201,6 @@ kill_heron
 # test_mpc
 # kill_heron
 
-# name="_cog025"
-# default_values
-# cog_y="0.025"
-# launch_heron
-# test_rl high high_dr_last.pth
-# test_mpc
-# kill_heron
-
-# name="_cog050"
-# default_values
-# cog_y="0.050"
-# launch_heron
-# test_rl high high_dr_last.pth
-# test_mpc
-# kill_heron
-
-# name="_cog075"
-# default_values
-# cog_y="0.075"
-# launch_heron
-# test_rl high high_dr_last.pth
-# test_mpc
-# kill_heron
-
-# name="_cog100"
-# default_values
-# cog_y="0.10"
-# launch_heron
-# test_rl high high_dr_last.pth
-# test_mpc
-# kill_heron
-
-# name="_cog125"
-# default_values
-# cog_y="0.125"
-# launch_heron
-# test_rl high high_dr_last.pth
-# test_mpc
-# kill_heron
-
-# name="_cog150"
-# default_values
-# cog_y="0.150"
-# launch_heron
-# test_rl high high_dr_last.pth
-# test_mpc
-# kill_heron
-
-
-
-# name="_rd0"
-# default_values
-# rdl="0.0"
-# launch_heron
-# test_rl high high_dr_last.pth
-# test_mpc
-# kill_heron
-
-# name="_rd2"
-# default_values
-# rdl="2.0"
-# launch_heron
-# test_rl high high_dr_last.pth
-# test_mpc
-# kill_heron
-
-# name="_rd4"
-# default_values
-# rdl="4.0"
-# launch_heron
-# test_rl high high_dr_last.pth
-# test_mpc
-# kill_heron
-
-# name="_rd5"
-# default_values
-# rdl="5.0"
-# launch_heron
-# test_rl high high_dr_last.pth
-# test_mpc
-# kill_heron
-
-# name="_rd6"
-# default_values
-# rdl="6.0"
-# launch_heron
-# test_rl high high_dr_last.pth
-# test_mpc
-# kill_heron
-
-# name="_rd8"
-# default_values
-# rdl="8.0"
-# launch_heron
-# test_rl high high_dr_last.pth
-# test_mpc
-# kill_heron
-
-# name="_rd10"
-# default_values
-# rdl="10.0"
-# launch_heron
-# test_rl high high_dr_last.pth
-# test_mpc
-# kill_heron
-
-# name="_rd12"
-# default_values
-# rdl="12.0"
-# launch_heron
-# test_rl high high_dr_last.pth
-# test_mpc
-# kill_heron
-
-# name="_rd15"
-# default_values
-# rdl="15.0"
-# launch_heron
-# test_rl high high_dr_last.pth
-# test_mpc
-# kill_heron
-
-# name="_rd20"
-# default_values
-# rdl="20.0"
-# launch_heron
-# test_rl high high_dr_last.pth
-# test_mpc
-# kill_heron
-
-
-# name="_low_mild"
-# default_values  
-# mass="38.0"
-# cog_y="0.02"
-# mi_z="10"
-# rdl="8.0"
-# sdl="2.0"
-# launch_heron
-# # test_both
-# test_rl
-# kill_heron
-
-# name="_low_heavy"
-# default_values  
-# mass="40.0"
-# cog_y="0.06"
-# mi_z="12"
-# rdl="10.0"
-# sdl="4.0"
-# launch_heron
-# # test_both
-# test_rl
-# kill_heron
 
 
 kill_environment
@@ -388,5 +239,3 @@ kill_environment
 # launch_heron
 # test_both
 # kill_heron
-
-# roslaunch heron_gazebo spawn_heron.launch mass:=35.0 cog_y:=0.01 mi_z:=12.0 rdl:=0.0 rdq:=2.0 sdl:=2 sdq:=2
