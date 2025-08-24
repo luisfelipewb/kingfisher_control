@@ -1,30 +1,51 @@
 #!/usr/bin/python3
 
 import rospy
-
-from std_msgs.msg import Float32
-from geometry_msgs.msg import TwistStamped, PoseStamped, Twist, Vector3Stamped
-from kingfisher_msgs.msg import Drive
+from geometry_msgs.msg import Twist, Vector3Stamped
 from nav_msgs.msg import Odometry
-
-from kingfisher_experiments.srv import SetFloat, SetFloatResponse
-
 import tf2_geometry_msgs
 import tf2_ros
 
-import threading
-
 
 class OdomTransform:
+    """
+    ODOM TWIST FRAME CORRECTION NODE
+
+    PURPOSE:
+    Corrects twist frame convention to enable seamless deployment between
+    simulation and real-world experiments.
+
+    BACKGROUND:
+    - Gazebo simulation publishes twist in world frame (non-standard behavior)
+    - SBG localization was intentionally configured to match Gazebo's behavior
+    - This allows identical code/configuration for both simulation and field tests
+    - Standard ROS convention: twist should be in child_frame_id (base_link)
+
+    SOLUTION:
+    Transform twist from world frame to base_link frame for both environments.
+    Includes configurable localization delay for robustness testing.
+
+    NOTE: SBG behavior is intentional design choice, not a bug.
+    """
 
     def __init__(self):
+        rospy.init_node('odom_transform')
+
         self.target_frame = rospy.get_param('~target_frame', 'base_link')
 
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(1.0))
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
+        delay_ms = rospy.get_param('~localization_delay', 0)  # milliseconds
+        self.localization_delay = rospy.Duration(delay_ms / 1000.0)
+
         rospy.Subscriber("~odom", Odometry, self.odom_cb, queue_size=10)
-        self.odom_pub = rospy.Publisher("~transformed_odom", Odometry, queue_size=10)
+        self.odom_pub = rospy.Publisher("~transformed_odom", Odometry, queue_size=1)
+
+        self.odom_buffer = []
+        period = 1.0 / 50.0  # seconds per message, assuming 50 Hz frequency
+        delay_seconds = self.localization_delay.to_sec()
+        self.buffer_length = max(1, int(round(delay_seconds / period)))
 
     def transform_twist(self, twist, transform):
         """
@@ -54,6 +75,7 @@ class OdomTransform:
     def odom_cb(self, msg):
         """
         Callback function for the odometry message. Publishes the transformed odometry message.
+        Adds artificial localization delay by using older transform data.
 
         Args:
             msg (nav_msgs.msg.Odometry): The odometry message.
@@ -61,47 +83,39 @@ class OdomTransform:
         Returns:
             None
         """
-        # Rest of the code...
-        child_frame_id = msg.child_frame_id
-        frame_id = msg.header.frame_id
-
-        pose_stamped = PoseStamped()
-        pose_stamped.header = msg.header
-        pose_stamped.pose = msg.pose.pose
-
-        twist_stamped = TwistStamped()
-        twist_stamped.header = msg.header
-        twist_stamped.twist = msg.twist.twist
-
-        try:
-            # Transform the pose, usually in the imu frame to the desired frame (e.g. base_link)
-            transform = self.tf_buffer.lookup_transform(self.target_frame, child_frame_id, rospy.Time())
-            pose_transformed = tf2_geometry_msgs.do_transform_pose(pose_stamped, transform)
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-            rospy.logwarn(f"Failed to find transform from [{frame_id}] to [{self.target_frame}] frame")
+        # Buffer incoming odometry messages to introduce delay
+        self.odom_buffer.append(msg)
+        if len(self.odom_buffer) < self.buffer_length:
+            # Not enough messages buffered yet, skip processing
             return
+        # Pop the oldest message to process after buffer is full
+        msg = self.odom_buffer.pop(0)
+
+
         try:
-            # Transform the twist, usually in a world frame to the desired frame (e.g. base_link)
-            transform = self.tf_buffer.lookup_transform(self.target_frame, frame_id, rospy.Time())
-            twist_transformed = self.transform_twist(twist_stamped.twist, transform)
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-            rospy.logwarn(f"Failed to find transform from [{frame_id}] to [{self.target_frame}] frame")
+            transform = self.tf_buffer.lookup_transform(self.target_frame, msg.header.frame_id, rospy.Time(0))
+            twist_transformed = self.transform_twist(msg.twist.twist, transform)
+
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as exception:
+            rospy.logwarn(f"Failed to find transform from [{msg.header.frame_id}] to [{self.target_frame}] frame: {exception}")
             return
 
         new_odom = Odometry()
-        new_odom = msg
+        new_odom.header = msg.header
+        new_odom.header.stamp = msg.header.stamp
         new_odom.child_frame_id = self.target_frame
-        #new_odom.pose.pose = pose_transformed.pose
+        new_odom.pose.pose = msg.pose.pose # Not changing the pose!
+        new_odom.pose.covariance = msg.pose.covariance
         new_odom.twist.twist = twist_transformed
+        new_odom.twist.covariance = msg.twist.covariance
 
-        rospy.logdebug(f"publishing transofmed odometry message to {self.odom_pub.name}")
         self.odom_pub.publish(new_odom)
-
 
 if __name__ == '__main__':
 
-    rospy.init_node('odom_transform')
+    try:
+        odom_transform = OdomTransform()
+        rospy.spin()
 
-    odom_transform = OdomTransform()
-
-    rospy.spin()
+    finally:
+        pass

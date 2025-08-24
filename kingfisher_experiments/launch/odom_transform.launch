@@ -1,8 +1,10 @@
 <launch>
+  <arg name="localization_delay" default="0"/> <!-- milliseconds -->
 
   <node pkg="kingfisher_experiments" type="odom_transform.py" name="odom_transform" output="screen">
     <remap from="~odom" to="/sbg_localization_processor/odometry"/> <!-- /imu/odometry | /pose_gt -->
     <remap from="~transformed_odom" to="/local_odom"/>
+    <param name="localization_delay" value="$(arg localization_delay)"/>
   </node>
 
 </launch>

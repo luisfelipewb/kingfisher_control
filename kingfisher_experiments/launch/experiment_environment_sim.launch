@@ -2,11 +2,13 @@
   <arg name="max_goal_distance" default="5.0"/>
   <arg name="loe_left" default="1.0"/>
   <arg name="loe_right" default="1.0"/>
+  <arg name="localization_delay" default="0"/>
 
   <!-- odometry transformer -->
   <node pkg="kingfisher_experiments" type="odom_transform.py" name="odom_transform" output="screen">
     <remap from="~odom" to="/pose_gt"/> <!-- /imu/odometry | /pose_gt -->
     <remap from="~transformed_odom" to="/local_odom"/>
+    <param name="localization_delay" value="$(arg localization_delay)"/>
   </node>
 
   <!-- velocity tracker -->
