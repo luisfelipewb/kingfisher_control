@@ -1,12 +1,15 @@
 <launch>
-
+  <arg name="max_goal_distance" default="5.0"/>
+  <arg name="loe_left" default="1.0"/>
+  <arg name="loe_right" default="1.0"/>
+  <arg name="localization_delay" default="0"/>
 
   <!-- cmd_drive mux -->
-  <node pkg="topic_tools" type="mux" name="mux_drive"
-  args="cmd_drive teleop/cmd_drive control_agent/cmd_drive velocity_tracker/cmd_drive mux:=drive_mux"/>
+  <node pkg="topic_tools" type="mux" name="drive_mux"
+  args="cmd_drive control_agent/cmd_drive teleop/cmd_drive velocity_tracker/cmd_drive mux:=drive_mux"/>
   <!-- goal mux -->
-  <node pkg="topic_tools" type="mux" name="mux_goal"
-  args="goal move_base_simple/goal waste_detector/goal waypoint_publisher/goal mux:=mux_goal"/>
+  <node pkg="topic_tools" type="mux" name="goal_mux"
+  args="goal waste_detector/goal waypoint_publisher/goal move_base_simple/goal mux:=goal_mux"/>
 
   <!-- teleop node -->
   <include file="$(find kingfisher_teleop)/launch/kingfisher_teleop.launch"/>
@@ -15,16 +18,33 @@
   <include file="$(find sbg_driver)/launch/sbg_device.launch"/>
   <!-- sbg_manager -->
   <include file="$(find sbg_localization_manager)/launch/sbg_localization_processor.launch"/>
+
   <!-- odometry transformer -->
   <node pkg="kingfisher_experiments" type="odom_transform.py" name="odom_transform" output="screen">
-    <remap from="~odom" to="/sbg_localization_processor/odometry"/> <!-- /imu/odometry | /pose_gt -->
+    <remap from="~odom" to="/pose_gt"/> <!-- /imu/odometry | /pose_gt -->
     <remap from="~transformed_odom" to="/local_odom"/>
+    <param name="localization_delay" value="$(arg localization_delay)"/>
   </node>
 
   <!-- velocity tracker -->
     <node pkg="kingfisher_experiments" type="velocity_tracker.py" name="velocity_tracker" output="screen">
     <!-- <remap from="~cmd_drive" to="/cmd_drive"/> -->
     <remap from="~odom" to="/local_odom"/>
+  </node>
+
+  <!-- goal publisher -->
+  <node pkg="kingfisher_rl" type="goal_publisher.py" name="goal_publisher" output="screen">
+    <remap from="~goal" to="/waste_detector/goal"/>
+    <remap from="~detections" to="/waste_detector/detections"/>
+    <param name="max_goal_distance" value="$(arg max_goal_distance)"/>
+  </node>
+
+  <!-- loe injector -->
+  <node pkg="kingfisher_rl" type="propeller_loe_injector.py" name="propeller_loe_injector" output="screen">
+    <remap from="~cmd_drive_input" to="/control_agent/cmd_drive_raw"/>
+    <remap from="~cmd_drive_output" to="/control_agent/cmd_drive"/>
+    <param name="loe_left" value="$(arg loe_left)"/>
+    <param name="loe_right" value="$(arg loe_right)"/>
   </node>
 
 </launch>
