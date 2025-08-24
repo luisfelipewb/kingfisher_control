@@ -1,5 +1,7 @@
 <launch>
   <arg name="max_goal_distance" default="5.0"/>
+  <arg name="loe_left" default="1.0"/>
+  <arg name="loe_right" default="1.0"/>
 
   <!-- odometry transformer -->
   <node pkg="kingfisher_experiments" type="odom_transform.py" name="odom_transform" output="screen">
@@ -29,6 +31,14 @@
     <remap from="~goal" to="/waste_detector/goal"/>
     <remap from="~detections" to="/waste_detector/detections"/>
     <param name="max_goal_distance" value="$(arg max_goal_distance)"/>
+  </node>
+
+  <!-- loe injector -->
+  <node pkg="kingfisher_rl" type="propeller_loe_injector.py" name="propeller_loe_injector" output="screen">
+    <remap from="~cmd_drive_input" to="/control_agent/cmd_drive_raw"/>
+    <remap from="~cmd_drive_output" to="/control_agent/cmd_drive"/>
+    <param name="loe_left" value="$(arg loe_left)"/>
+    <param name="loe_right" value="$(arg loe_right)"/>
   </node>
 
 </launch>
