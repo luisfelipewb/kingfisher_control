@@ -1,0 +1,6 @@
+<launch>
+  <!-- sbg -->
+  <include file="$(find sbg_driver)/launch/sbg_device.launch"/>
+  <!-- sbg_manager -->
+  <include file="$(find sbg_localization_manager)/launch/sbg_localization_processor.launch"/>
+</launch>

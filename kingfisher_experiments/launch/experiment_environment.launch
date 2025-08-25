@@ -1,8 +1,59 @@
 <launch>
-  <arg name="max_goal_distance" default="5.0"/>
+  <arg name="max_goal_distance" default="15.0"/>
   <arg name="loe_left" default="1.0"/>
   <arg name="loe_right" default="1.0"/>
   <arg name="localization_delay" default="0"/>
+
+  <arg name="pixel_noise_radius" default="0" doc="Pixel noise radius for detection simulation"/>
+  <arg name="enable_missing_detections" default="false" doc="Enable false negative filtering"/>
+  <arg name="image_processing_delay" default="100" doc="Image processing delay in milliseconds"/>
+
+  <arg name="frame_id" default="world" doc="Frame ID for the simulated waste"/>
+  <arg name="detection_rate" default="2.0" doc="Publishing rate in Hz"/>
+  <arg name="distance_threshold" default="0.30" doc="Distance threshold for waste cleanup"/>
+  <arg name="clean_waste_positions" default="true" doc="Enable automatic waste removal when robot gets close"/>
+  <arg name="config_file" default="empty.yaml" doc="YAML configuration file with waste positions"/>
+
+  <!-- Fake detector - adds perception noise -->
+  <node name="fake_detector" pkg="pimage_utils" type="fake_detector.py" output="screen">
+      <remap from="~simulated_waste" to="/simulated_waste"/>
+      <remap from="~fov_marker" to="/fov_marker"/>
+      <remap from="~detections" to="/waste_detector/detections" />
+
+      <param name="intrinsics_path" type="string" value="$(find pimage_utils)/config/ost.yaml" />
+      <param name="extrinsics_path" type="string" value="$(find pimage_utils)/config/camera_pose.yaml" />
+      <param name="pixel_noise_radius" value="$(arg pixel_noise_radius)"/>
+
+      <!-- <param name="confidence_thresh" type="double" value="0.5" /> -->
+  </node>
+
+  <!-- Simulated waste node - republishes waste and removes it when close enough -->
+  <node name="simulated_waste" pkg="pimage_utils" type="simulated_waste.py" output="screen">
+    <!-- Node parameters -->
+    <remap from="~point" to="/next_point"/>
+    <remap from="~simulated_waste" to="/simulated_waste"/>
+
+    <param name="frame_id" value="$(arg frame_id)"/>
+    <param name="rate" value="$(arg detection_rate)"/>
+    <param name="distance_threshold" value="$(arg distance_threshold)"/>
+    <param name="clean_waste_positions" value="$(arg clean_waste_positions)"/>
+    <param name="config_file" value="$(arg config_file)"/>
+  </node>
+
+  <!-- odometry transformer -->
+  <node pkg="kingfisher_experiments" type="odom_transform.py" name="odom_transform" output="screen">
+    <remap from="~odom" to="/sbg_localization_processor/odometry"/> <!-- /imu/odometry | /pose_gt -->
+    <remap from="~transformed_odom" to="/local_odom"/>
+    <param name="localization_delay" value="$(arg localization_delay)"/>
+  </node>
+
+  <!-- velocity tracker -->
+    <node pkg="kingfisher_experiments" type="velocity_tracker.py" name="velocity_tracker" output="screen">
+    <remap from="~odom" to="/local_odom"/>
+  </node>
+
+  <!-- teleop node -->
+  <include file="$(find kingfisher_teleop)/launch/kingfisher_teleop.launch"/>
 
   <!-- cmd_drive mux -->
   <node pkg="topic_tools" type="mux" name="drive_mux"
@@ -10,27 +61,6 @@
   <!-- goal mux -->
   <node pkg="topic_tools" type="mux" name="goal_mux"
   args="goal waste_detector/goal waypoint_publisher/goal move_base_simple/goal mux:=goal_mux"/>
-
-  <!-- teleop node -->
-  <include file="$(find kingfisher_teleop)/launch/kingfisher_teleop.launch"/>
-
-  <!-- sbg -->
-  <include file="$(find sbg_driver)/launch/sbg_device.launch"/>
-  <!-- sbg_manager -->
-  <include file="$(find sbg_localization_manager)/launch/sbg_localization_processor.launch"/>
-
-  <!-- odometry transformer -->
-  <node pkg="kingfisher_experiments" type="odom_transform.py" name="odom_transform" output="screen">
-    <remap from="~odom" to="/pose_gt"/> <!-- /imu/odometry | /pose_gt -->
-    <remap from="~transformed_odom" to="/local_odom"/>
-    <param name="localization_delay" value="$(arg localization_delay)"/>
-  </node>
-
-  <!-- velocity tracker -->
-    <node pkg="kingfisher_experiments" type="velocity_tracker.py" name="velocity_tracker" output="screen">
-    <!-- <remap from="~cmd_drive" to="/cmd_drive"/> -->
-    <remap from="~odom" to="/local_odom"/>
-  </node>
 
   <!-- goal publisher -->
   <node pkg="kingfisher_rl" type="goal_publisher.py" name="goal_publisher" output="screen">
