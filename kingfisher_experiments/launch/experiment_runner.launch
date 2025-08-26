@@ -9,6 +9,7 @@
   <arg name="exp_file" default="experiments.yaml"/>
   <arg name="non_stop" default="false"/>
   <arg name="stable_start_time" default="2.0"/>
+  <arg name="vel_threshold" default="0.05"/>
 
   <!-- Experiment Runner -->
   <node pkg="kingfisher_experiments" type="experiment_runner.py" name="experiment_runner" output="screen">
@@ -22,7 +23,7 @@
     <param name="~experiments_file" value="$(arg exp_file)"/>
     <param name="~send_goal_button" value="7"/>
     <param name="~exp_name" value="$(arg exp_name)"/>
-    <param name="~vel_threshold" value="0.05"/>
+    <param name="~vel_threshold" value="$(arg vel_threshold)"/>
     <param name="~non_stop" value="$(arg non_stop)"/>
     <param name="~stable_start_time" value="$(arg stable_start_time)"/>
 
