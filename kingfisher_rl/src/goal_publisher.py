@@ -30,8 +30,8 @@ class GoalPublisher:
         """
         Updates the pointcloud in the local frame after converting it from global to base_link frame.
         """
-        # TODO
-        rospy.loginfo("TODO: update frame")
+        if msg.header.frame_id != "base_link":
+            rospy.logwarn("Should check frame transformation")
         return msg
         
 
