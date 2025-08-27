@@ -14,6 +14,8 @@
   <arg name="clean_waste_positions" default="true" doc="Enable automatic waste removal when robot gets close"/>
   <arg name="config_file" default="empty.yaml" doc="YAML configuration file with waste positions"/>
 
+  <arg name="odom_topic" default="/sbg_localization_processor/odometry"/>
+
   <!-- Fake detector - adds perception noise -->
   <node name="fake_detector" pkg="pimage_utils" type="fake_detector.py" output="screen">
       <remap from="~simulated_waste" to="/simulated_waste"/>
@@ -42,7 +44,7 @@
 
   <!-- odometry transformer -->
   <node pkg="kingfisher_experiments" type="odom_transform.py" name="odom_transform" output="screen">
-    <remap from="~odom" to="/sbg_localization_processor/odometry"/> <!-- /imu/odometry | /pose_gt -->
+    <remap from="~odom" to="$(arg odom_topic)"/> <!-- /imu/odometry | /pose_gt -->
     <remap from="~transformed_odom" to="/local_odom"/>
     <param name="localization_delay" value="$(arg localization_delay)"/>
   </node>

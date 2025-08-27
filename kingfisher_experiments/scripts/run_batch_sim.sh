@@ -1,11 +1,13 @@
-name="opt"
-exp="large_experiments.yaml"
-exp_name="ideal"
+
+exp_name="thename"
 base_dir="/home/luis/workspaces/bags_ws/tfr_exp/sim_bags"
 
-onnx_path="rsl_rl/kingfisher_direct/2025-08-20_15-58-58_final-seed42/exported/policy.onnx"
-onnx_path="rsl_rl/kingfisher_direct/2025-08-21_14-23-40_nodelay-seed42/exported/policy.onnx"
+onnx_path="rsl_rl/kingfisher_direct/final-seed42/exported/policy.onnx"
 
+exp_file="experiments.yaml"
+dst_thres=0.3
+
+localization_delay=0
 # Default values
 
 mass="35.0"
@@ -61,7 +63,14 @@ kill_rviz() {
 }
 
 start_environment_nodes() {
-    roslaunch kingfisher_experiments experiment_environment_sim.launch max_goal_distance:=10.0 &
+    roslaunch kingfisher_experiments experiment_environment.launch \
+        max_goal_distance:=10.0 \
+        odom_topic:=/pose_gt \
+        loe_right:=$loe_right \
+        pixel_noise_radius:=$pixel_noise_radius \
+        distance_threshold:=$dst_thres \
+        localization_delay:=$localization_delay &
+
     ENVNODES_PID=$!
     sleep 10
     echo "Environment nodes started."
@@ -75,16 +84,6 @@ kill_environment_nodes() {
     echo "Environment nodes terminated."
     sleep 1
 }
-
-wait_experiment_to_finish() {
-    while rosnode list | grep -q "/experiment_runner"
-    do
-        echo "Monitoring /experiment_runner..."
-        sleep 5
-    done
-    sleep 1
-}
-
 
 start_rl() {
     roslaunch kingfisher_rl capture_agent_onnx.launch onnx_path:=$onnx_path &
@@ -136,7 +135,14 @@ kill_environment() {
 
 run_experiments() {
     # This is expected to block until the experiment is finished
-    roslaunch kingfisher_experiments experiment_runner.launch non_stop:=true &
+    roslaunch kingfisher_experiments experiment_runner.launch \
+        non_stop:=true \
+        exp_file:=$exp_file \
+        distance_threshold:=$dst_thres \
+        exp_name:=$exp_name \
+        stable_start_time:=3.0 \
+        vel_threshold:=0.05 \
+        &
     echo "Experiment started."
     EXPERIMENT_PID=$!
     wait $EXPERIMENT_PID
@@ -160,57 +166,30 @@ stop_bag_recorder() {
 }
 
 test_rl() {
-    start_rl $1 $2
+    start_rl
     start_bag_recorder
     run_experiments
     stop_bag_recorder
     kill_agent
 }
 
+enable_perception_noise() {
+    rosservice call /goal_mux/select /waste_detector/goal
+}
 
-# TODO: 
-# Insert the perception nodes
-# simulated_waste
-# fake_detector (with parameters)
-# SWITCH BETWEEN each one (when using perception noise or not)
-# rosservice call /goal_mux/select /move_base_simple/goal
-# rosservice call /goal_mux/select /waste_detector/goal
-
-
-# name="_optimal"
-
-# exp="small_experiments.yaml"
-# exp="tiny_experiments.yaml"
-exp="experiments.yaml"
-start_environment
+disable_perception_noise() {
+    rosservice call /goal_mux/select /move_base_simple/goal
+}
 
 
-name="_default"
 default_values
 launch_heron
-test_rl high high_dr_last.pth
-
-# test_mpc
+start_environment
+enable_perception_noise
+test_rl
 kill_heron
-
-# name="_cog000"
-# default_values
-# cog_y="0.00"
-# launch_heron
-# test_rl high high_dr_last.pth
-# test_mpc
-# kill_heron
-
-
-
 kill_environment
 
-
-# exp="small_experiments.yaml"
-
-# cog_ys=(0.0 0.01 0.05)
-# for cog_y in "${cog_ys[@]}"; do
-# done
 
 
 # for mass in "${masses[@]}"; do
@@ -225,17 +204,3 @@ kill_environment
 #             done
 #         done
 #     done
-
-# default_values
-# name="_opt_tiny"
-# launch_heron
-# test_both
-# kill_heron
-
-# default_values
-# cog_y="0.1"
-# name="_cog_tiny"
-
-# launch_heron
-# test_both
-# kill_heron
