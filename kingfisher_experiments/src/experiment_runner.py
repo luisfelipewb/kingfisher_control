@@ -265,6 +265,14 @@ class ExperimentRunner:
         experiment_index = 0
         total_experiments = len(experiments)
 
+        # Start by publishing a neutral goal to warmup the goal_mux.
+        # The mux only advertises the topic after it starts receiving messages which might cause missed messages.
+        dummy_goal, _ = self.generate_goal(0.0, 0.0)
+        for _ in range(5):
+            self.goal_publisher.publish(dummy_goal)
+            rospy.sleep(0.1)
+        rospy.sleep(1)
+
         while experiment_index < total_experiments:
             experiment = experiments[experiment_index]
 
