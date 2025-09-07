@@ -1,52 +1,88 @@
-# Designed to work with the run_batch_sim.py scrip. 
-# List of experiments that will be iterated by the scrip. 
+# Designed to work with the run_batch_sim.py scrip.
+# List of experiments that will be iterated by the scrip.
 # Each experiment has a set of parameters that can be updated.
+base_dir_default: &base_dir_default "/home/luis/workspaces/bags_ws/tfr_exp/sim_bags_s45"
+onnx_path_default: &onnx_path_default "rsl_rl/kingfisher_direct/final-seed45/exported/policy.onnx"
+onnx_path_noratelimit: &onnx_path_noratelimit "rsl_rl/kingfisher_direct/noratelimit-seed45/exported/policy.onnx"
+
 experiments:
-  - base_dir: "/home/luis/workspaces/bags_ws/tfr_exp/sim_bags"
-    exp_name: "norate"
-    onnx_path: "rsl_rl/kingfisher_direct/noratelimit-seed42/exported/policy.onnx"
-    localization_delay: 0
-  - base_dir: "/home/luis/workspaces/bags_ws/tfr_exp/sim_bags"
-    exp_name: "norate-ld100"
-    onnx_path: "rsl_rl/kingfisher_direct/noratelimit-seed42/exported/policy.onnx"
+  - exp_name: "01-Ideal"
+    base_dir: *base_dir_default
+    onnx_path: *onnx_path_default
+
+  - exp_name: "02-LocDelay"
+    base_dir: *base_dir_default
+    onnx_path: *onnx_path_default
     localization_delay: 100
-  - base_dir: "/home/luis/workspaces/bags_ws/tfr_exp/sim_bags"
-    exp_name: "ideal"
-    onnx_path: "rsl_rl/kingfisher_direct/final-seed42/exported/policy.onnx"
+
+  - exp_name: "03-NoRateLim"
+    base_dir: *base_dir_default
+    onnx_path: *onnx_path_noratelimit
     localization_delay: 0
-  - base_dir: "/home/luis/workspaces/bags_ws/tfr_exp/sim_bags"
-    exp_name: "ld100"
-    onnx_path: "rsl_rl/kingfisher_direct/final-seed42/exported/policy.onnx"
+
+  - exp_name: "04-LDandNRL"
+    base_dir: *base_dir_default
+    onnx_path: *onnx_path_noratelimit
     localization_delay: 100
-  - base_dir: "/home/luis/workspaces/bags_ws/tfr_exp/sim_bags"
-    exp_name: "loe90"
-    onnx_path: "rsl_rl/kingfisher_direct/final-seed42/exported/policy.onnx"
+
+  - exp_name: "05-RThrEff90"
+    base_dir: *base_dir_default
+    onnx_path: *onnx_path_default
     loe_right: 0.9
-  - base_dir: "/home/luis/workspaces/bags_ws/tfr_exp/sim_bags"
-    exp_name: "dist"
-    onnx_path: "rsl_rl/kingfisher_direct/final-seed42/exported/policy.onnx"
-    mass: 50.0
-    cog_y: 0.5
+
+  - exp_name: "06-RThrEff70"
+    base_dir: *base_dir_default
+    onnx_path: *onnx_path_default
+    loe_right: 0.7
+
+  - exp_name: "07-RThrEff50"
+    base_dir: *base_dir_default
+    onnx_path: *onnx_path_default
+    loe_right: 0.5
+
+  - exp_name: "08-DynPertL"
+    base_dir: *base_dir_default
+    onnx_path: *onnx_path_default
+    mass: 41.25
+    cog_y: -0.10
     sdq: 25.89
-  - base_dir: "/home/luis/workspaces/bags_ws/tfr_exp/sim_bags"
-    exp_name: "pn25"
-    onnx_path: "rsl_rl/kingfisher_direct/final-seed42/exported/policy.onnx"
+
+  - exp_name: "09-DynPertH"
+    base_dir: *base_dir_default
+    onnx_path: *onnx_path_default
+    mass: 41.25
+    cog_y: -0.20
+    sdq: 34.52
+
+  - exp_name: "10-PNoise05px"
+    base_dir: *base_dir_default
+    onnx_path: *onnx_path_default
+    pixel_noise_radius: 5
+
+  - exp_name: "11-PNoise25px"
+    base_dir: *base_dir_default
+    onnx_path: *onnx_path_default
     pixel_noise_radius: 25
-  - base_dir: "/home/luis/workspaces/bags_ws/tfr_exp/sim_bags"
-    exp_name: "all-light"
-    onnx_path: "rsl_rl/kingfisher_direct/final-seed42/exported/policy.onnx"
-    loe_right: 0.9
-    pixel_noise_radius: 25
-    mass: 50.0
-    cog_y: 0.5
-    sdq: 25.89
-  - base_dir: "/home/luis/workspaces/bags_ws/tfr_exp/sim_bags"
-    exp_name: "all-heavy"
-    onnx_path: "rsl_rl/kingfisher_direct/final-seed42/exported/policy.onnx"
-    localization_delay: 0
-    loe_right: 0.6
+
+  - exp_name: "12-PNoise50px"
+    base_dir: *base_dir_default
+    onnx_path: *onnx_path_default
     pixel_noise_radius: 50
-    mass: 50.0
-    cog_y: 0.1
-    sdq: 34.52  
-  
+
+  - exp_name: "13-CombPertL"
+    base_dir: *base_dir_default
+    onnx_path: *onnx_path_default
+    loe_right: 0.9
+    pixel_noise_radius: 5
+    mass: 41.25
+    cog_y: -0.10
+    sdq: 25.89
+
+  - exp_name: "14-CombPertH"
+    base_dir: *base_dir_default
+    onnx_path: *onnx_path_default
+    loe_right: 0.7
+    pixel_noise_radius: 50
+    mass: 41.25
+    cog_y: -0.20
+    sdq: 34.52

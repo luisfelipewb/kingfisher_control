@@ -1,5 +1,5 @@
 <launch>
-  <arg name="max_goal_distance" default="15.0"/>
+  <arg name="max_goal_distance" default="100.0"/>
   <arg name="loe_left" default="1.0"/>
   <arg name="loe_right" default="1.0"/>
   <arg name="localization_delay" default="0"/>
@@ -10,7 +10,7 @@
 
   <arg name="frame_id" default="world" doc="Frame ID for the simulated waste"/>
   <arg name="detection_rate" default="2.0" doc="Publishing rate in Hz"/>
-  <arg name="distance_threshold" default="0.30" doc="Distance threshold for waste cleanup"/>
+  <arg name="distance_threshold" default="0.10" doc="Distance threshold for waste cleanup"/>
   <arg name="clean_waste_positions" default="true" doc="Enable automatic waste removal when robot gets close"/>
   <arg name="config_file" default="empty.yaml" doc="YAML configuration file with waste positions"/>
 

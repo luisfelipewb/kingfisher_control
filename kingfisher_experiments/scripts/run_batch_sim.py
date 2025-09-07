@@ -151,7 +151,7 @@ def main():
                 "kingfisher_experiments",
                 "experiment_environment.launch",
                 args={
-                    "max_goal_distance": "10.0",
+                    "max_goal_distance": "100.0",
                     "odom_topic": "/pose_gt",
                     "loe_right": loe_right,
                     "pixel_noise_radius": pixel_noise_radius,
@@ -163,11 +163,9 @@ def main():
 
             # Enable perception noise
             if pixel_noise_radius > 0:
-                print("calling the move_base_simple/goal")
-                rosservice_call("/goal_mux/select", "/move_base_simple/goal")
-            else:
-                print("calling the move_base_simple/goal")
                 rosservice_call("/goal_mux/select", "/waste_detector/goal")
+            else:
+                rosservice_call("/goal_mux/select", "/move_base_simple/goal")
 
             # Start RL agent
             rm.start(
