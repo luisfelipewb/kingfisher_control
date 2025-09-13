@@ -1,6 +1,6 @@
 <launch>
 <!-- This launch file is for policies trained with isaac lab and the model is exported to onnx -->
-  <arg name="onnx_path" default="rsl_rl/kingfisher_direct/v0-seed42/exported/policy.onnx"/>
+  <arg name="onnx_path" default="rsl_rl/kingfisher_direct/2025-08-20_16-21-26_final-seed44/exported/policy.onnx"/>
   <arg name="cmd_topic" default="/control_agent/cmd_drive_raw"/>
   <arg name="odom_topic" default="/local_odom"/>
   <arg name="goal_topic" default="/goal"/>

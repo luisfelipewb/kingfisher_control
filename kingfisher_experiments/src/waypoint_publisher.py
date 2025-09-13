@@ -5,6 +5,7 @@ import yaml
 import rospkg
 from geometry_msgs.msg import PoseArray, Pose, PoseStamped
 from nav_msgs.msg import Odometry
+from std_msgs.msg import Bool
 import tf
 from numpy.linalg import norm
 from topic_tools.srv import MuxSelect
@@ -13,13 +14,15 @@ from topic_tools.srv import MuxSelect
 class WaypointPublisher:
     def __init__(self, config_file):
         self.config_file = config_file
-        self.points = self.load_yaml_config()
+        self.points, self.frame_id = self.load_yaml_config()
         self.goals_pub = rospy.Publisher('~goals', PoseArray, queue_size=1)
         self.next_goal_pub = rospy.Publisher('~goal', PoseStamped, queue_size=1)
+        self.agent_status = True #TODO: Check start value
 
         self.odom_sub = rospy.Subscriber('~odom', Odometry, self.odom_callback, queue_size=1)
         self.goal_mon1_sub = rospy.Subscriber('~monitor_goal1', PoseStamped, self.monitor_goal1_callback, queue_size=1)
         self.goal_mon2_sub = rospy.Subscriber('~monitor_goal2', PoseStamped, self.monitor_goal2_callback, queue_size=1)
+        self.agent_status_sub = rospy.Subscriber('/agent_status', Bool, self.agent_status_callback, queue_size=1)
         self.listener = tf.TransformListener()
         self.world_frame = None
         self.wait_for_world_frame()
@@ -28,7 +31,7 @@ class WaypointPublisher:
         self.dist_threshold = rospy.get_param('~dist_threshold', 1.5)
         self.last_goal_time = rospy.Time.now()
         self.lost_control = True
-        self.goal_mux_srv = rospy.ServiceProxy('/mux_goal/select', MuxSelect)
+        self.goal_mux_srv = rospy.ServiceProxy('/goal_mux/select', MuxSelect)
 
     def select_mux(self, topic):
         try:
@@ -46,14 +49,22 @@ class WaypointPublisher:
     def odom_callback(self, msg):
         if self.world_frame is None:
             self.world_frame = msg.header.frame_id
-        else: 
+        else:
             return
 
     def load_yaml_config(self):
         """Load the YAML configuration file."""
         with open(self.config_file, 'r') as file:
             config = yaml.safe_load(file)
-        return config['experiments'][0]['points']
+
+        waypoints = config['waypoints']
+        frame_id = config['frame_id']
+        offset = config['offset']
+        for point in waypoints:
+            point[0] += offset[0]
+            point[1] += offset[1]
+
+        return waypoints, frame_id
 
     def setup_pose_array(self):
         """Publish points as PoseArray."""
@@ -65,7 +76,7 @@ class WaypointPublisher:
 
         # Create PoseArray message
         pose_array = PoseArray()
-        pose_array.header.frame_id = "base_link"  # You can change this to the relevant frame
+        pose_array.header.frame_id = self.frame_id
 
         for point in self.points:
             # Create Pose message
@@ -111,17 +122,20 @@ class WaypointPublisher:
         return pose_array
 
     def monitor_goal1_callback(self, msg):
-        self.last_goal_time = rospy.Time.now() #rospy.Time(msg.header.stamp.secs, msg.header.stamp.nsecs)
+        self.last_goal_time = rospy.Time.now()
         self.lost_control = True
         rospy.loginfo(f"Detected goal from {self.goal_mon1_sub.resolved_name}")
         self.select_mux(self.goal_mon1_sub.resolved_name)
-    
+
     def monitor_goal2_callback(self, msg):
-        self.last_goal_time =  rospy.Time.now() #rospy.Time(msg.header.stamp.secs, msg.header.stamp.nsecs)
+        self.last_goal_time = rospy.Time.now()
         self.lost_control = True
         rospy.loginfo(f"Detected goal from {self.goal_mon2_sub.resolved_name}")
         self.select_mux(self.goal_mon2_sub.resolved_name)
-    
+
+    def agent_status_callback(self, msg):
+        # Store the agent status
+        self.agent_status = msg.data
 
     def goal_reached(self):
         """Check if the goal point is reached."""
@@ -137,7 +151,7 @@ class WaypointPublisher:
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
             rospy.logerr(f"Error transforming Pose: {e}")
             return False
-        
+
         dist = norm([transformed_goal.pose.position.x, transformed_goal.pose.position.y])
         rospy.loginfo_throttle(1, "Distance to goal: %.2f" % dist)
         if dist < self.dist_threshold:
@@ -150,13 +164,13 @@ class WaypointPublisher:
         if self.goal_reached(): # TODO: Check if reached the point
             self.current_point_idx = (self.current_point_idx + 1) % len(self.pose_array.poses)
         point = self.pose_array.poses[self.current_point_idx]
-        # print(f"Next point: {point}")
         return point
-    
+
     def publish_goal(self, point):
         """Publish a goal point as PoseStamped."""
         goal = PoseStamped()
         goal.header.frame_id = self.world_frame
+        goal.header.stamp = rospy.Time.now()
         goal.pose.position.x = point.position.x
         goal.pose.position.y = point.position.y
         goal.pose.position.z = 0.0
@@ -165,22 +179,23 @@ class WaypointPublisher:
         self.goals_pub.publish(self.pose_array)
 
 
-    
+
     def loop(self):
         rate = rospy.Rate(10)
         while not rospy.is_shutdown():
 
-            # should be out of the loop in case the point is reached while the agent is controlling the movement
             point = self.get_next_point()
 
-            if rospy.Time.now() - self.last_goal_time < rospy.Duration(5): #TODO: parameter
+            # If the agent is controlling the robot, we should not publish new goals
+            if self.lost_control and self.agent_status:
                 continue
-            
-            # Make sure to get the mux back 
-            if self.lost_control:
+
+            # Get back control before publishing a new goal
+            if self.lost_control and not self.agent_status:
                 self.lost_control = False
+                print("Regained control, changing the mux")
                 self.select_mux('waypoint_publisher/goal')
-            
+
             self.publish_goal(point)
 
             rate.sleep()
@@ -191,7 +206,7 @@ if __name__ == '__main__':
 
         # Load YAML configuration
         rospack = rospkg.RosPack()
-        # Get file name from ros param 
+        # Get file name from ros param
         pattern = rospy.get_param('~pattern', 'grid')
         print(pattern)
         file_path = rospack.get_path('kingfisher_experiments') + '/config/' + f'{pattern}.yaml'

@@ -97,6 +97,7 @@ class RLAgent:
             try:
                 transform = self.tf_buffer.lookup_transform(self.world_frame, msg.header.frame_id, rospy.Time(0))
                 self.goal_world = tf2_geometry_msgs.do_transform_pose(msg, transform)
+                self.goal_world.header.stamp = msg.header.stamp
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 rospy.logwarn(f"Failed to find transform goal from [{self.goal_world.header.frame_id}] to [{self.world_frame}] frame")
                 return

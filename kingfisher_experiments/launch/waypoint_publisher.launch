@@ -4,7 +4,7 @@
   <arg name="base_dir" default="/tmp"/>
   <arg name="exp_name" default="experiment_name"/>
   <arg name="simulation" default="false"/>
-  <arg name="distance_threshold" default="0.3"/>
+  <arg name="distance_threshold" default="0.2"/>
   <arg name="status_topic" default="/agent_status"/>
   <arg name="cmd_topic" default="/control_agent/cmd_drive"/>
   <arg name="exp_file" default="experiments.yaml"/>
