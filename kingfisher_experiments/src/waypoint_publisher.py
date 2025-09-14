@@ -12,26 +12,36 @@ from topic_tools.srv import MuxSelect
 
 
 class WaypointPublisher:
-    def __init__(self, config_file):
-        self.config_file = config_file
-        self.points, self.frame_id = self.load_yaml_config()
-        self.goals_pub = rospy.Publisher('~goals', PoseArray, queue_size=1)
-        self.next_goal_pub = rospy.Publisher('~goal', PoseStamped, queue_size=1)
-        self.agent_status = True #TODO: Check start value
+    def __init__(self):
 
-        self.odom_sub = rospy.Subscriber('~odom', Odometry, self.odom_callback, queue_size=1)
-        self.goal_mon1_sub = rospy.Subscriber('~monitor_goal1', PoseStamped, self.monitor_goal1_callback, queue_size=1)
-        self.goal_mon2_sub = rospy.Subscriber('~monitor_goal2', PoseStamped, self.monitor_goal2_callback, queue_size=1)
-        self.agent_status_sub = rospy.Subscriber('/agent_status', Bool, self.agent_status_callback, queue_size=1)
         self.listener = tf.TransformListener()
+        self.odom_sub = rospy.Subscriber('~odom', Odometry, self.odom_callback, queue_size=1)
         self.world_frame = None
         self.wait_for_world_frame()
+
+        self.config_file = rospy.get_param('~config_file', 'empty.yaml')
+        rospack = rospkg.RosPack()
+        file_path = rospack.get_path('kingfisher_experiments') + '/config/' + self.config_file
+        self.points, self.frame_id = self.load_yaml_config(file_path)
         self.pose_array = self.setup_pose_array()
+
+        self.goals_pub = rospy.Publisher('~goals', PoseArray, queue_size=1)
+        self.next_goal_pub = rospy.Publisher('~goal', PoseStamped, queue_size=1)
+        self.agent_status = True
+
         self.current_point_idx = 0
         self.dist_threshold = rospy.get_param('~dist_threshold', 1.5)
+        self.goal_bounds_threshold = rospy.get_param('~goal_bounds_threshold', 4.0)
+
         self.last_goal_time = rospy.Time.now()
         self.lost_control = True
         self.goal_mux_srv = rospy.ServiceProxy('/goal_mux/select', MuxSelect)
+        self.perception_goal = None
+        self.next_waypoint = None
+
+        self.perception_goal_sub = rospy.Subscriber('~perception_goal', PoseStamped, self.monitor_perception_goal_callback, queue_size=1)
+        self.agent_status_sub = rospy.Subscriber('~status_topic', Bool, self.agent_status_callback, queue_size=1)
+        self.timer = rospy.Timer(rospy.Duration(0.1), self.get_next_point)
 
     def select_mux(self, topic):
         try:
@@ -52,9 +62,9 @@ class WaypointPublisher:
         else:
             return
 
-    def load_yaml_config(self):
+    def load_yaml_config(self, file_path):
         """Load the YAML configuration file."""
-        with open(self.config_file, 'r') as file:
+        with open(file_path, 'r') as file:
             config = yaml.safe_load(file)
 
         waypoints = config['waypoints']
@@ -121,17 +131,29 @@ class WaypointPublisher:
         # print(pose_array)
         return pose_array
 
-    def monitor_goal1_callback(self, msg):
-        self.last_goal_time = rospy.Time.now()
-        self.lost_control = True
-        rospy.loginfo(f"Detected goal from {self.goal_mon1_sub.resolved_name}")
-        self.select_mux(self.goal_mon1_sub.resolved_name)
+    def monitor_perception_goal_callback(self, msg):
 
-    def monitor_goal2_callback(self, msg):
+        """ This callback is triggered by a new perception goal. Here we just store the goal in the world frame."""
+
+        try:
+            self.listener.waitForTransform(msg.header.frame_id, self.world_frame, rospy.Time(0), rospy.Duration(1.0))
+            global_goal = self.listener.transformPose(self.world_frame, msg)
+            x = global_goal.pose.position.x
+            y = global_goal.pose.position.y
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
+            rospy.logerr(f"Error transforming goal to world frame: {e}")
+            return
+
+        # Update the frame and position of the perception goal
+        msg.header.frame_id = self.world_frame
+        msg.pose.position.x = x
+        msg.pose.position.y = y
+        msg.pose.position.z = 0.0
+
+
         self.last_goal_time = rospy.Time.now()
-        self.lost_control = True
-        rospy.loginfo(f"Detected goal from {self.goal_mon2_sub.resolved_name}")
-        self.select_mux(self.goal_mon2_sub.resolved_name)
+        self.perception_goal = msg
+
 
     def agent_status_callback(self, msg):
         # Store the agent status
@@ -153,18 +175,17 @@ class WaypointPublisher:
             return False
 
         dist = norm([transformed_goal.pose.position.x, transformed_goal.pose.position.y])
-        rospy.loginfo_throttle(1, "Distance to goal: %.2f" % dist)
+        # rospy.loginfo_throttle(1, "Distance to goal: %.2f" % dist)
         if dist < self.dist_threshold:
             return True
         return False
 
 
-    def get_next_point(self):
+    def get_next_point(self, event):
 
         if self.goal_reached(): # TODO: Check if reached the point
             self.current_point_idx = (self.current_point_idx + 1) % len(self.pose_array.poses)
-        point = self.pose_array.poses[self.current_point_idx]
-        return point
+        self.next_waypoint = self.pose_array.poses[self.current_point_idx]
 
     def publish_goal(self, point):
         """Publish a goal point as PoseStamped."""
@@ -179,47 +200,48 @@ class WaypointPublisher:
         self.goals_pub.publish(self.pose_array)
 
 
+    def check_goal_bounds(self, point):
+        """ Check if the point is close to the next waypoint."""
+        if not self.next_waypoint:
+            return False
+        if not point:
+            return False
+
+        dist = norm([point.pose.position.x - self.next_waypoint.position.x,
+                      point.pose.position.y - self.next_waypoint.position.y])
+        # print(f"Distance between goal and next waypoint: {dist}")
+        return dist < self.goal_bounds_threshold
 
     def loop(self):
-        rate = rospy.Rate(10)
+        rate = rospy.Rate(5)
+
         while not rospy.is_shutdown():
 
-            point = self.get_next_point()
+            if not self.agent_status:
+                if self.lost_control:
+                    self.select_mux('/waypoint_publisher/goal')
+                    self.perception_goal = None
+                    self.lost_control = False
+            elif self.check_goal_bounds(self.perception_goal) and self.agent_status:
+                if not self.lost_control:
+                    self.select_mux(self.perception_goal_sub.resolved_name)
+                    self.lost_control = True
+            elif self.next_waypoint:
+                if self.lost_control:
+                    self.select_mux('/waypoint_publisher/goal')
+                    self.lost_control = False
 
-            # If the agent is controlling the robot, we should not publish new goals
-            if self.lost_control and self.agent_status:
-                continue
-
-            # Get back control before publishing a new goal
-            if self.lost_control and not self.agent_status:
-                self.lost_control = False
-                print("Regained control, changing the mux")
-                self.select_mux('waypoint_publisher/goal')
-
-            self.publish_goal(point)
-
+            if self.next_waypoint:
+                self.publish_goal(self.next_waypoint)
             rate.sleep()
+
 
 if __name__ == '__main__':
     try:
         rospy.init_node('waypoint_publisher')
 
-        # Load YAML configuration
-        rospack = rospkg.RosPack()
-        # Get file name from ros param
-        pattern = rospy.get_param('~pattern', 'grid')
-        print(pattern)
-        file_path = rospack.get_path('kingfisher_experiments') + '/config/' + f'{pattern}.yaml'
-        try:
-            with open(file_path, 'r') as file:
-                pass
-        except FileNotFoundError:
-            rospy.logerr(f"File {file_path} not found")
-            exit(1)
-
         # Create PointsPublisher instance
-        points_publisher = WaypointPublisher(file_path)
-
+        points_publisher = WaypointPublisher()
         # Publish points as PoseArray
         points_publisher.loop()
     except rospy.ROSInterruptException:

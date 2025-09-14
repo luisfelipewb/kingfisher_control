@@ -1,0 +1,10 @@
+v0: 0.5
+frame_id: "world"
+offset: [10, 1]
+waypoints:
+  - [0, 0]
+  - [30, 0]
+  - [30, 15]
+  - [0, 15]
+simulated_waste: []
+

@@ -1,0 +1,44 @@
+<launch>
+  <arg name="max_goal_distance" default="20.0"/>
+  <arg name="loe_left" default="1.0"/>
+  <arg name="loe_right" default="1.0"/>
+  <arg name="localization_delay" default="0"/>
+
+  <arg name="odom_topic" default="/sbg_localization_processor/odometry"/>
+
+
+  <!-- odometry transformer -->
+  <node pkg="kingfisher_experiments" type="odom_transform.py" name="odom_transform" output="screen">
+    <remap from="~odom" to="$(arg odom_topic)"/> <!-- /imu/odometry | /pose_gt -->
+    <remap from="~transformed_odom" to="/local_odom"/>
+    <param name="localization_delay" value="$(arg localization_delay)"/>
+  </node>
+
+  <!-- teleop node -->
+  <include file="$(find kingfisher_teleop)/launch/kingfisher_teleop.launch"/>
+
+  <!-- cmd_drive mux -->
+  <node pkg="topic_tools" type="mux" name="drive_mux"
+  args="cmd_drive control_agent/cmd_drive teleop/cmd_drive velocity_tracker/cmd_drive mux:=drive_mux"/>
+  <!-- goal mux -->
+  <node pkg="topic_tools" type="mux" name="goal_mux"
+  args="goal waste_detector/goal waypoint_publisher/goal move_base_simple/goal mux:=goal_mux"/>
+
+  <!-- goal publisher -->
+  <node pkg="kingfisher_rl" type="goal_publisher.py" name="goal_publisher" output="screen">
+    <remap from="~goal" to="/waste_detector/goal"/>
+    <remap from="~detections" to="/waste_detector/detections"/>
+    <param name="max_goal_distance" value="$(arg max_goal_distance)"/>
+  </node>
+
+  <!-- loe injector -->
+  <node pkg="kingfisher_rl" type="propeller_loe_injector.py" name="propeller_loe_injector" output="screen">
+    <remap from="~cmd_drive_input" to="/control_agent/cmd_drive_raw"/>
+    <remap from="~cmd_drive_output" to="/control_agent/cmd_drive"/>
+    <param name="loe_left" value="$(arg loe_left)"/>
+    <param name="loe_right" value="$(arg loe_right)"/>
+  </node>
+
+  <include file="$(find kingfisher_rl)/launch/capture_agent_onnx.launch"/>
+
+</launch>

@@ -1,27 +1,23 @@
 <launch>
 
   <!-- Arguments -->
-  <arg name="base_dir" default="/tmp"/>
-  <arg name="exp_name" default="experiment_name"/>
-  <arg name="simulation" default="false"/>
-  <arg name="distance_threshold" default="0.2"/>
+  <arg name="perception_goal" default="/waste_detector/goal"/>
+  <arg name="odom" default="/local_odom"/>
   <arg name="status_topic" default="/agent_status"/>
-  <arg name="cmd_topic" default="/control_agent/cmd_drive"/>
-  <arg name="exp_file" default="experiments.yaml"/>
-  <arg name="non_stop" default="false"/>
+  <arg name="dist_threshold" default="2.0"/>
+  <arg name="goal_bounds_threshold" default="7.0"/>
+  <arg name="config_file" default="grid_small.yaml" doc="YAML configuration file with waste positions"/>
 
 
-  <!-- Experiment Runner -->
+
+  <!-- Waypoint Publisher -->
   <node pkg="kingfisher_experiments" type="waypoint_publisher.py" name="waypoint_publisher" output="screen">
-    <remap from="~monitor_goal1" to="/waste_detector/goal"/>
-    <remap from="~monitor_goal2" to="/move_base_simple/goal"/>
-    <remap from="~odom" to="/local_odom"/>
+    <remap from="~perception_goal" to="$(arg perception_goal)"/>
+    <remap from="~odom" to="$(arg odom)"/>
+    <remap from="~status_topic" to="$(arg status_topic)"/>
+    <param name="dist_threshold" value="$(arg dist_threshold)"/>
+    <param name="goal_bounds_threshold" value="$(arg goal_bounds_threshold)"/>
+    <param name="config_file" value="$(arg config_file)"/>
   </node>
 
-  <!-- Bag Recorder -->
-  <!-- <include file="$(find kingfisher_experiments)/launch/bag_recorder.launch">
-    <arg name="base_dir" value="$(arg base_dir)" />
-    <arg name="exp_name" value="$(arg exp_name)" />
-    <arg name="split_duration" value="6000" />
-  </include> -->
 </launch>
