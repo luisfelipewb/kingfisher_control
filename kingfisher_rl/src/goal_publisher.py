@@ -43,7 +43,7 @@ class GoalPublisher:
 
         # Convert the PointCloud2 message to a list of points
         points = list(pc2.read_points(msg, field_names=("x", "y", "z"), skip_nans=True))
-
+        min_distance = 100.0
         if points:
             # Find the closest point
             closest_point = None
