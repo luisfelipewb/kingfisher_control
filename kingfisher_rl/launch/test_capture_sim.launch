@@ -1,3 +1,0 @@
-<launch> 
-    <node pkg="kingfisher_rl" type="test_capture_sim.py" name ="test_capture_sim" output="screen"/>
-</launch>

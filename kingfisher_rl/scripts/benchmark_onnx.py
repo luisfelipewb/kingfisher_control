@@ -1,125 +1,72 @@
 #!/usr/bin/env python3
+"""
+Time an ONNX policy's inference on random passthrough_thrusters observations.
 
-import onnxruntime as ort
-import numpy as np
-import time
+    python3 scripts/benchmark_onnx.py -m models/passthrough_thrusters/seed44.onnx
+"""
+
 import argparse
 import csv
+import time
 
-def create_dummy_observations():
-    """Create dummy observations matching the expected input format."""
-    # Based on the original code, observations are concatenated as:
-    # actions (2) + lin_vel (2) + ang_vel (1) + goal_cos_sin (2) + goal_distance (1) = 8 total
-    
-    actions = np.random.uniform(-1.0, 1.0, (1, 2)).astype(np.float32)
-    lin_vel = np.random.uniform(-2.0, 2.0, (1, 2)).astype(np.float32)
-    ang_vel = np.random.uniform(-1.0, 1.0, (1, 1)).astype(np.float32)
-    goal_cos_sin = np.random.uniform(-1.0, 1.0, (1, 2)).astype(np.float32)
-    goal_distance = np.random.uniform(0.0, 9.0, (1, 1)).astype(np.float32)
-    
-    observations = np.concatenate([
-        actions,       # 2
-        lin_vel,       # 2  
-        ang_vel,       # 1
-        goal_cos_sin,  # 2
-        goal_distance  # 1
-    ], axis=1)
-    
-    return {"obs": observations}
+import numpy as np
+import onnxruntime as ort
 
-def benchmark_onnx_inference(model_path, num_iterations=1000):
-    """Benchmark ONNX model inference."""
-    
-    print(f"Loading ONNX model from: {model_path}")
-    
-    # Load the ONNX model
-    try:
-        ort_session = ort.InferenceSession(model_path, providers=['CPUExecutionProvider'])
-    except Exception as e:
-        print(f"Error loading model: {e}")
-        return
-    
-    # Get model input/output info
-    input_names = [inp.name for inp in ort_session.get_inputs()]
-    output_names = [out.name for out in ort_session.get_outputs()]
-    
-    print(f"Model inputs: {input_names}")
-    print(f"Model outputs: {output_names}")
-    
-    # Create dummy observations
-    obs = create_dummy_observations()
-    print(f"Input shape: {obs['obs'].shape}")
-    
-    # Warm-up runs
-    print("Performing warm-up runs...")
+
+def random_observation():
+    """Return a random observation: action, vx vy, wz, cos sin of the bearing, distance."""
+    return np.concatenate([
+        np.random.uniform(-1.0, 1.0, 2),
+        np.random.uniform(-2.0, 2.0, 2),
+        np.random.uniform(-1.0, 1.0, 1),
+        np.random.uniform(-1.0, 1.0, 2),
+        np.random.uniform(0.0, 9.0, 1),
+    ]).astype(np.float32).reshape(1, -1)
+
+
+def benchmark(model, iterations, csv_path):
+    """Run the policy `iterations` times and print the timing statistics."""
+    session = ort.InferenceSession(model, providers=['CPUExecutionProvider'])
+    name = session.get_inputs()[0].name
+    print(f'Inputs: {[i.name for i in session.get_inputs()]}, '
+          f'outputs: {[o.name for o in session.get_outputs()]}')
+
     for _ in range(10):
-        output = ort_session.run(None, obs)
-    
-    # Benchmark runs
-    print(f"Running {num_iterations} inference iterations...")
-    
-    inference_times = []
-    
-    for i in range(num_iterations):
-        # Create new random observations for each iteration
-        obs = create_dummy_observations()
-        
-        start_time = time.time()
-        output = ort_session.run(None, obs)
-        end_time = time.time()
-        
-        inference_time = (end_time - start_time) * 1000  # Convert to milliseconds
-        inference_times.append(inference_time)
-        
-        # Clip output as in original code
-        action = np.clip(output[0].squeeze(0), -1, 1)
-        
+        session.run(None, {name: random_observation()})
+
+    times = []
+    for i in range(iterations):
+        obs = random_observation()
+        start = time.perf_counter()
+        output = session.run(None, {name: obs})
+        times.append((time.perf_counter() - start) * 1000.0)
         if i % 100 == 0:
-            print(f"Iteration {i}: {inference_time:.3f} ms, Action: [{action[0]:.3f}, {action[1]:.3f}]")
-    
+            action = np.clip(output[0].reshape(-1), -1.0, 1.0)
+            print(f'{i}: {times[-1]:.3f} ms, action {np.round(action, 3)}')
 
-    csv_path = "/tmp/mlp_inference.csv"
-    with open(csv_path, "w", newline="") as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(["inference_time_ms"])
-        for t in inference_times:
-            writer.writerow([t])
-    print(f"Inference times saved to {csv_path}")
+    if csv_path:
+        with open(csv_path, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(['inference_time_ms'])
+            writer.writerows([t] for t in times)
+        print(f'Times saved to {csv_path}')
 
-    # Calculate statistics
-    mean_time = np.mean(inference_times)
-    std_time = np.std(inference_times)
-    min_time = np.min(inference_times)
-    max_time = np.max(inference_times)
-    median_time = np.median(inference_times)
-    
-    print("\n" + "="*50)
-    print("INFERENCE BENCHMARK RESULTS")
-    print("="*50)
-    print(f"Total iterations: {num_iterations}")
-    print(f"Mean inference time: {mean_time:.3f} ± {std_time:.3f} ms")
-    print(f"Median inference time: {median_time:.3f} ms")
-    print(f"Min inference time: {min_time:.3f} ms")
-    print(f"Max inference time: {max_time:.3f} ms")
-    print(f"Total time: {sum(inference_times):.3f} ms")
-    print(f"Throughput: {1000.0 / mean_time:.1f} inferences/second")
-    
-    # Calculate percentiles
-    p95 = np.percentile(inference_times, 95)
-    p99 = np.percentile(inference_times, 99)
-    print(f"95th percentile: {p95:.3f} ms")
-    print(f"99th percentile: {p99:.3f} ms")
+    times = np.array(times)
+    print(f'{iterations} runs: mean {times.mean():.3f} ± {times.std():.3f} ms, '
+          f'median {np.median(times):.3f}, min {times.min():.3f}, max {times.max():.3f}, '
+          f'p95 {np.percentile(times, 95):.3f}, p99 {np.percentile(times, 99):.3f} ms; '
+          f'{1000.0 / times.mean():.0f} inferences/s')
+
 
 def main():
-    parser = argparse.ArgumentParser(description='Benchmark ONNX model inference')
-    parser.add_argument('--model', '-m', type=str, required=True, 
-                       help='Path to ONNX model file')
-    parser.add_argument('--iterations', '-n', type=int, default=1000,
-                       help='Number of inference iterations (default: 1000)')
-    
+    """Parse the arguments and run the benchmark."""
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
+    parser.add_argument('--model', '-m', required=True, help='ONNX policy')
+    parser.add_argument('--iterations', '-n', type=int, default=1000)
+    parser.add_argument('--csv', help='save the times to this CSV file')
     args = parser.parse_args()
-    
-    benchmark_onnx_inference(args.model, args.iterations)
+    benchmark(args.model, args.iterations, args.csv)
+
 
 if __name__ == '__main__':
     main()

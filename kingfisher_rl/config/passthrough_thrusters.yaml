@@ -1,0 +1,8 @@
+# passthrough_thrusters.launch.py's agent. goal_publisher and detection_goal take
+# kingfisher_goals' config/goals.yaml.
+
+/**/passthrough_thrusters:
+  ros__parameters:
+    policy: passthrough_thrusters/seed44.onnx  # under share/kingfisher_rl/models/, or absolute
+    odom_timeout: 1.0                          # s
+    episode_gap: 0.5                           # s without goals before the previous action resets

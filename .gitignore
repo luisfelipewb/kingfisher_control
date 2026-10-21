@@ -18,3 +18,7 @@ smac3-*
 output
 __pycache__/
 *.egg-info/
+
+# Policies: only the tracked samples
+*.onnx
+!kingfisher_rl/models/passthrough_thrusters/seed44.onnx
