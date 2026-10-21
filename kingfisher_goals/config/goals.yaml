@@ -1,0 +1,13 @@
+# kingfisher_goals defaults; reach_distance and goal_timeout are the ROS 1 field
+# launch's dist_threshold and goal_timeout.
+
+/**/goal_publisher:
+  ros__parameters:
+    rate: 10.0             # Hz, control/goal and control/status
+    reach_distance: 0.1    # m
+    goal_timeout: 30.0     # s after the last goal was received
+    odom_timeout: 1.0      # s
+
+/**/detection_goal:
+  ros__parameters:
+    max_goal_distance: 5.0 # m
