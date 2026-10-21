@@ -1,41 +1,23 @@
 # kingfisher_control
 
-This repository contains two ROS packages for controlling the Clearpath Kingfisher Unmanned Surface Vehicle (USV).
+Control for the Kingfisher ASV, ROS 2 Jazzy: everything that produces `cmd_drive`. The platform
+(`kingfisher`) consumes it. The ROS 1 code is on the `noetic` branch.
 
-## Packages
+| package | what it does |
+|---|---|
+| `kingfisher_twist` | `cmd_vel` → `teleop/cmd_drive`, for arcade teleop |
+| `kingfisher_goals` | `goal_publisher`: a goal in any frame → a body-frame goal stream (`control/goal`) that ends when the goal is reached or times out; `detection_goal`: goals from detections |
+| `kingfisher_rl` | RL agents (ONNX): `passthrough_thrusters`, one command per goal on `control/cmd_drive` |
+| `kingfisher_sysid` | `sequence_runner`: open-loop thrust sequences on `control/cmd_drive`, logged to CSV |
+| `kingfisher_experiments` | still ROS 1 (`COLCON_IGNORE`): velocity PID, waypoints, experiment runner |
 
-### 1. kingfisher_sid
-
-This package contains scripts for performing automated system identification with the Clearpath Kingfisher USV.
-
-#### Usage
-
-To perform system identification, you can use the following launch file:
-
-```bash
-roslaunch kingfisher_sid run_sequence.launch [experiment_name]
-```
-
-### 2. kingfisher_rl
-
-This package contains ROS wrappers to execute capture tasks with the Clearpath Kingfisher USV.
-
-#### Usage
-
-To execute capture agent in simulation, you can use the following command. It will start and agent that subscribes to to a goal message.
+Controllers publish on `control/cmd_drive`. The bringup's and the sim's `drive_mux` passes either
+`teleop/cmd_drive` (the default) or `control/cmd_drive` to `cmd_drive`. Press **A** on the joystick to
+hand over to the controller and **B** to take back control. When a controller stops publishing, the
+MCU (or `cmd_drive_translate` in sim) zeroes the thrusters.
 
 ```bash
-roslaunch kingfisher_rl capture_sim.launch policy:=weights.pth
+ros2 launch kingfisher_rl passthrough_thrusters.launch.py      # use_sim_time:=true in sim
 ```
 
-For automated tests the following command can be handy.
-```bash
-roslaunch kingfisher_rl test_capture_sim.launch
-```
-## Dependencies
-
-- https://github.com/heron/heron_simulator
-
-Make sure to have dependencies installed before using the packages in this repository.
-
-
+Each package's README has its interface and parameters.
