@@ -1,0 +1,8 @@
+# From the ROS 1 kingfisher_experiments/config/grid_large_corners.yaml, offset baked in.
+frame_id: launch_site
+waypoints:
+  - [10, 1]
+  - [40, 1]
+  - [40, 16]
+  - [10, 16]
+bottles: []

@@ -11,3 +11,20 @@
 /**/detection_goal:
   ros__parameters:
     max_goal_distance: 5.0 # m
+
+# reach_distance and capture_radius are the ROS 1 waypoint_publisher's
+# dist_threshold and goal_bounds_threshold.
+/**/waypoint_goal:
+  ros__parameters:
+    rate: 2.0               # Hz, goal
+    reach_distance: 2.0     # m
+    capture_radius: 7.0     # m from the current waypoint
+    detection_timeout: 1.0  # s
+    loop: false
+
+/**/virtual_detections:
+  ros__parameters:
+    rate: 2.0               # Hz, detections
+    collect_radius: 0.33    # m
+    max_range: 10.0         # m
+    half_fov_deg: 35.0      # deg either side of the bow

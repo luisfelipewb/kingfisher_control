@@ -11,9 +11,10 @@ Turns a goal in any frame into a body-frame goal stream for the controllers.
 * ``control/status`` (std_msgs/Bool) is true while a goal is active, at ``rate``.
 """
 
-from math import atan2, cos, hypot, sin
+from math import cos, hypot, sin
 
 from geometry_msgs.msg import PoseStamped
+from kingfisher_goals.geometry import yaw_of
 from nav_msgs.msg import Odometry
 import rclpy
 from rclpy.duration import Duration
@@ -23,11 +24,6 @@ from rclpy.time import Time
 from std_msgs.msg import Bool
 from tf2_geometry_msgs import do_transform_pose_stamped
 from tf2_ros import Buffer, TransformException, TransformListener
-
-
-def yaw_of(q):
-    """Return the yaw of a geometry_msgs/Quaternion."""
-    return atan2(2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z))
 
 
 class GoalPublisher(Node):
