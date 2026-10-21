@@ -16,3 +16,5 @@
 .clang_complete
 smac3-*
 output
+__pycache__/
+*.egg-info/
