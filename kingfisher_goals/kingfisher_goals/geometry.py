@@ -19,6 +19,14 @@ def transform_xy(transform, xy):
     return xy @ np.array([[c, s], [-s, c]]) + [t.x, t.y]
 
 
+def from_body(pose, xy):
+    """Return (N, 2) points from the body frame of a geometry_msgs/Pose in pose's frame."""
+    yaw = yaw_of(pose.orientation)
+    c, s = np.cos(yaw), np.sin(yaw)
+    xy = np.asarray(xy, dtype=float).reshape(-1, 2)
+    return xy @ np.array([[c, s], [-s, c]]) + [pose.position.x, pose.position.y]
+
+
 def to_body(pose, xy):
     """Return (N, 2) points from pose's frame in the body frame of a geometry_msgs/Pose."""
     yaw = yaw_of(pose.orientation)

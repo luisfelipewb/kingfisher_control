@@ -1,0 +1,8 @@
+# scripts/generate_goals.py --distance 2 4 2 --bearing -30 30 30 --seed 0 --output config/scenarios/relative_small.yaml
+goals:                 # robot frame, m: x forward, y to port
+  - [4.000, 0.000]
+  - [2.000, 0.000]
+  - [3.464, 2.000]
+  - [1.732, 1.000]
+  - [1.732, -1.000]
+  - [3.464, -2.000]

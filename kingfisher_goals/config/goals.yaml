@@ -1,11 +1,11 @@
-# kingfisher_goals defaults; reach_distance and goal_timeout are the ROS 1 field
-# launch's dist_threshold and goal_timeout.
+# kingfisher_goals defaults; reach_distance is the ROS 1 field launch's
+# dist_threshold.
 
 /**/goal_publisher:
   ros__parameters:
     rate: 10.0             # Hz, control/goal and control/status
     reach_distance: 0.1    # m
-    goal_timeout: 30.0     # s after the last goal was received
+    goal_timeout: 0.0      # s after the last goal was received, 0 for never
     odom_timeout: 1.0      # s
 
 /**/detection_goal:
@@ -21,6 +21,19 @@
     capture_radius: 7.0     # m from the current waypoint
     detection_timeout: 1.0  # s
     loop: false
+
+# reach_distance is virtual_detections' collect_radius; control_button and
+# teleop_button are the joy buttons of teleop.yaml's drive_select_*.
+/**/relative_goal:
+  ros__parameters:
+    rate: 10.0              # Hz, relative_goal/active
+    area_frame: test_center
+    area_half_size: 15.0    # m either side of the frame's origin, in x and y
+    reach_distance: 0.33    # m
+    goal_timeout: 30.0      # s before a goal is missed
+    gap: 5.0                # s between goals
+    control_button: 0       # A
+    teleop_button: 1        # B
 
 /**/virtual_detections:
   ros__parameters:

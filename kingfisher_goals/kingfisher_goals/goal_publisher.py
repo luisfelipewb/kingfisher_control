@@ -5,8 +5,9 @@ Turns a goal in any frame into a body-frame goal stream for the controllers.
   latest) and replaces the previous one;
 * at ``rate``, the goal is published on ``control/goal`` in ``odom``'s child frame
   (``kingfisher/base_link``), stamped with the ``odom`` stamp, in 2D: z, roll and pitch are 0;
-* the goal is cleared once closer than ``reach_distance``, or ``goal_timeout`` after it was
-  received (receipt time, not its stamp, so the sender's clock doesn't matter);
+* the goal is cleared once closer than ``reach_distance``, on ``goal/clear`` (std_msgs/Empty), or
+  ``goal_timeout`` after it was received, if not 0 (receipt time, not its stamp, so the sender's
+  clock doesn't matter);
 * nothing goes on ``control/goal`` while ``odom`` is older than ``odom_timeout``;
 * ``control/status`` (std_msgs/Bool) is true while a goal is active, at ``rate``.
 """
@@ -21,7 +22,7 @@ from rclpy.duration import Duration
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.time import Time
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Empty
 from tf2_geometry_msgs import do_transform_pose_stamped
 from tf2_ros import Buffer, TransformException, TransformListener
 
@@ -35,9 +36,9 @@ class GoalPublisher(Node):
         rate = self.declare_parameter('rate', 10.0).value
         # m, the goal is reached closer than this
         self._reach_distance = self.declare_parameter('reach_distance', 0.1).value
-        # s after a goal is received before it is given up
+        # s after a goal is received before it is given up, 0 for never
         self._goal_timeout = Duration(
-            seconds=self.declare_parameter('goal_timeout', 30.0).value)
+            seconds=self.declare_parameter('goal_timeout', 0.0).value)
         # s, older odom stops the goal stream
         self._odom_timeout = Duration(
             seconds=self.declare_parameter('odom_timeout', 1.0).value)
@@ -54,6 +55,7 @@ class GoalPublisher(Node):
         self._status_pub = self.create_publisher(Bool, 'control/status', 1)
         self.create_subscription(Odometry, 'odom', self._odom_callback, 1)
         self.create_subscription(PoseStamped, 'goal', self._goal_callback, 10)
+        self.create_subscription(Empty, 'goal/clear', self._clear_callback, 10)
         self.create_timer(1.0 / rate, self._update)
 
     def _odom_callback(self, msg):
@@ -76,9 +78,13 @@ class GoalPublisher(Node):
         self._goal = (pose.position.x, pose.position.y, yaw_of(pose.orientation))
         self._goal_time = self.get_clock().now()
 
+    def _clear_callback(self, msg):
+        self._goal = None
+
     def _update(self):
         now = self.get_clock().now()
-        if self._goal is not None and now - self._goal_time > self._goal_timeout:
+        if self._goal is not None and self._goal_timeout.nanoseconds > 0 and \
+                now - self._goal_time > self._goal_timeout:
             self.get_logger().info('Goal timed out')
             self._goal = None
         msg = self._body_goal(now) if self._goal is not None else None

@@ -31,6 +31,7 @@ setup(
         'console_scripts': [
             'detection_goal = kingfisher_goals.detection_goal:main',
             'goal_publisher = kingfisher_goals.goal_publisher:main',
+            'relative_goal = kingfisher_goals.relative_goal:main',
             'virtual_detections = kingfisher_goals.virtual_detections:main',
             'waypoint_goal = kingfisher_goals.waypoint_goal:main',
         ],
