@@ -1,6 +1,6 @@
 """2D helpers shared by the goal nodes: everything is on the water plane, z up."""
 
-from math import atan2
+from math import atan2, cos, sin
 
 import numpy as np
 
@@ -8,6 +8,17 @@ import numpy as np
 def yaw_of(q):
     """Return the yaw of a geometry_msgs/Quaternion."""
     return atan2(2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z))
+
+
+def wrap(angle):
+    """Return an angle in [-pi, pi]."""
+    return atan2(sin(angle), cos(angle))
+
+
+def heading_error(pose, xy):
+    """Return the angle from the bow of a geometry_msgs/Pose to a point in pose's frame."""
+    x, y = to_body(pose, xy)[0]
+    return atan2(y, x)
 
 
 def transform_xy(transform, xy):

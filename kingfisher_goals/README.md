@@ -20,6 +20,7 @@ Goals for the controllers. Five nodes:
 waypoints ─► waypoint_goal ─► goal ─► goal_publisher ─► control/goal ─► agent
 detections ─┘  (from virtual_detections or a detector)
 goals file ─► relative_goal ─► goal, goal/clear ─► goal_publisher
+                            └─► control/cmd_drive, between goals
 ```
 
 ## Running
@@ -121,8 +122,9 @@ Relative to the node's namespace (`/kingfisher`).
 | sub | `joy` | `sensor_msgs/Joy`, the buttons that switch `drive_mux` | relative_goal |
 | pub | `goal` | `PoseStamped` in `odom`'s frame, once per goal | relative_goal |
 | pub | `goal/clear` | `Empty`, when a goal ends | relative_goal |
+| pub | `control/cmd_drive` | `kingfisher_msgs/Drive`, at `rate` during a lead-in | relative_goal |
 | pub | `relative_goal/active` | `Bool`, at `rate`; true while a goal runs under the policy | relative_goal |
-| pub | `relative_goal/status` | `std_msgs/String`, latched: `12/190 5.0 m -20 deg`, `gap`, `recentring`, `waiting for control`, `done` | relative_goal |
+| pub | `relative_goal/status` | `std_msgs/String`, latched: a goal (`12/190 5.0 m -20 deg`), `lead-in: <why it waits>`, `recentring: <why it waits>`, `waiting for control`, `done` | relative_goal |
 | pub | `relative_goal/markers` | `visualization_msgs/MarkerArray` in `area_frame`, latched; the remaining goals, and the selected one in red | relative_goal |
 
 A goal is transformed into `odom`'s frame once, when it arrives, and a new goal replaces it.
@@ -136,11 +138,16 @@ was computed from. It stops while `odom` is stale.
 camera model, noise or false negatives.
 
 `relative_goal` places each goal from the boat's pose when it selects it, and takes the first in the file
-inside the area, so the file's order is a preference. When none fits, it heads for the area's centre until
-one does, then goes on with no gap. A goal ends reached or missed, and either way it is done; a missed one
-isn't retried. Progress is kept in memory, so a restart runs the whole list again. The area limits goals,
-not the boat, which can overshoot a goal near the edge, and it doesn't stop the boat going straight to the
-centre from outside the area when **A** is pressed.
+inside the area, so the file's order is a preference. Every goal starts from a lead-in, so the policy gets
+the boat in the same state each time: the node drives it on `control/cmd_drive` with its own speed and
+heading controller, holding the heading the boat had and ramping the speed at `lead_in.max_accel`, and sends
+the goal once the boat has stayed at `start_speed` and barely turning for `settle_time`. It shares
+`control/cmd_drive` with the agent, which only drives while goals stream, and `settle_time` is longer than
+the agent's `episode_gap`, so each goal is a new episode. When no goal fits, the lead-in heads for the
+area's centre and also waits for the bow to point at it. A goal ends reached or missed, and either way it
+is done; a missed one isn't retried. Progress is kept in memory, so a restart runs the whole list again.
+The area limits goals, not the boat, which can overshoot a goal near the edge, and it doesn't stop the boat
+going straight to the centre from outside the area when **A** is pressed.
 
 ## Parameters
 
@@ -170,6 +177,12 @@ Defaults in `config/goals.yaml`.
 | relative_goal | `area_half_size` | 15.0 | m either side of the frame's origin, in x and y |
 | relative_goal | `reach_distance` | 0.33 | m, the same as `collect_radius` |
 | relative_goal | `goal_timeout` | 30.0 | s before a goal is missed |
-| relative_goal | `gap` | 5.0 | s between goals |
+| relative_goal | `start_speed` | 0.5 | m/s forward when a goal is sent |
+| relative_goal | `start_speed_tolerance` | 0.05 | m/s |
+| relative_goal | `start_yaw_rate` | 0.05 | rad/s, at most, when a goal is sent |
+| relative_goal | `turn_speed` | 0.2 | m/s, the least while the bow is far off: the boat barely turns standing still |
+| relative_goal | `settle_time` | 1.0 | s ready before a goal is sent, longer than the agent's `episode_gap` |
+| relative_goal | `recentre_heading` | 10.0 | deg between the bow and the centre, to end recentring |
+| relative_goal | `lead_in.*` | see `goals.yaml` | the lead-in controller's gains, tuned in sim only |
 | relative_goal | `control_button` | 0 | `joy` button that selects `control/cmd_drive` (A) |
 | relative_goal | `teleop_button` | 1 | `joy` button that selects `teleop/cmd_drive` (B) |

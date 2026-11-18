@@ -31,7 +31,21 @@
     area_half_size: 15.0    # m either side of the frame's origin, in x and y
     reach_distance: 0.33    # m
     goal_timeout: 30.0      # s before a goal is missed
-    gap: 5.0                # s between goals
+    start_speed: 0.5        # m/s forward when a goal is sent
+    start_speed_tolerance: 0.05 # m/s
+    start_yaw_rate: 0.05    # rad/s, at most, when a goal is sent
+    turn_speed: 0.2         # m/s, the least while the bow is far off; it barely turns standing still
+    settle_time: 1.0        # s ready before a goal is sent, longer than the agent's episode_gap
+    recentre_heading: 10.0  # deg off the centre's bearing, to end recentring
+    lead_in:                # speed and heading controller, thrust in [-1, 1]
+      k_heading: 1.0        # turn per rad
+      k_yaw_rate: 1.0       # turn per rad/s
+      max_turn: 0.5
+      max_accel: 0.1        # m/s^2, of the speed setpoint, rising
+      feedforward: 0.8      # thrust per m/s; 0.41 holds 0.5 m/s in sim
+      k_speed: 0.5          # thrust per m/s of error
+      k_integral: 0.2       # thrust per m of error
+      max_integral: 0.2
     control_button: 0       # A
     teleop_button: 1        # B
 

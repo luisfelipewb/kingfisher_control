@@ -39,7 +39,7 @@ def generate_launch_description():
             'namespace', default_value='kingfisher',
             description='ROS namespace of the boat'),
         DeclareLaunchArgument(
-            'scenario', default_value='relative_small',
+            'scenario', default_value='relative_medium',
             description='Scenario: a name under config/scenarios/, or a .yaml path'),
         DeclareLaunchArgument(
             'use_sim_time', default_value='false',
