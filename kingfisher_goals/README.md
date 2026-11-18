@@ -73,12 +73,30 @@ with the boat inside the test area:
 
 ```bash
 ros2 launch kingfisher_rl passthrough_thrusters.launch.py                   # use_sim_time:=true in sim
-ros2 launch kingfisher_goals relative_goal.launch.py scenario:=relative_grid
+ros2 launch kingfisher_goals relative_goal.launch.py scenario:=relative_medium
 ```
 
 Then press **A**. **B** pauses and puts the current goal back in the list, and **A** carries on. The
 node reads these presses from `joy`, because `drive_mux` doesn't publish its selection, so a
 `drive_mux/select` call by hand isn't seen.
+
+The launch records the run to `~/bags/relative_goal/<scenario>_<date-time>` (`record:=false` to skip,
+`bag_dir:=` for another folder). `relative_goal` exits once all goals are done, and the launch with
+it, which closes the bag; Ctrl-C closes it too. In the bag, `relative_goal/status` marks each goal as
+`goal <index> <distance> <heading>`: its index in the scenario file, m and deg.
+
+Two scripts, not installed, turn a bag into CSVs and plots, with ROS sourced:
+
+```bash
+scripts/relative_goal_csv.py ~/bags/relative_goal/relative_medium_2026-11-18_14-05-30
+scripts/plot_relative_goals.py ~/bags/relative_goal/relative_medium_2026-11-18_14-05-30.csv
+```
+
+The first writes, next to the bag, `<bag>.csv` with a row per `control/cmd_drive` action (the policy's
+and the lead-in's) and odom interpolated to it, including the pose in the frame of the boat when the
+goal was sent, and `<bag>_goals.csv` with a row per goal sent: time, outcome (reached, missed, put
+back), closest range and the start speed and yaw rate. The second plots every goal from its start,
+and the whole run in `odom` by phase.
 
 Its scenario is a list in the robot frame, x forward and y to port, and a goal can appear more than once:
 
@@ -124,7 +142,7 @@ Relative to the node's namespace (`/kingfisher`).
 | pub | `goal/clear` | `Empty`, when a goal ends | relative_goal |
 | pub | `control/cmd_drive` | `kingfisher_msgs/Drive`, at `rate` during a lead-in | relative_goal |
 | pub | `relative_goal/active` | `Bool`, at `rate`; true while a goal runs under the policy | relative_goal |
-| pub | `relative_goal/status` | `std_msgs/String`, latched: a goal (`12/190 5.0 m -20 deg`), `lead-in: <why it waits>`, `recentring: <why it waits>`, `waiting for control`, `done` | relative_goal |
+| pub | `relative_goal/status` | `std_msgs/String`, latched: `waiting`, `lead-in`, `recentring`, `goal <index> <distance> <heading>` (`goal 7 3.00 -45.0`), `done` | relative_goal |
 | pub | `relative_goal/markers` | `visualization_msgs/MarkerArray` in `area_frame`, latched; the remaining goals, and the selected one in red | relative_goal |
 
 A goal is transformed into `odom`'s frame once, when it arrives, and a new goal replaces it.

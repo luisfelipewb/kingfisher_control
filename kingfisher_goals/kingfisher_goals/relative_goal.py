@@ -3,10 +3,10 @@ Runs a list of goals relative to the boat, keeping them inside a test area.
 
 ::
 
-    waiting for control ─A─► lead-in ─ready─► goal ─reached/missed─► lead-in … ► done
-                               │                           B from any state ─► waiting
-                  no goal fits ▼
-                           recentring ─ready─► goal
+    waiting ─A─► lead-in ─ready─► goal ─reached/missed─► lead-in … ► done, and exit
+                   │                         B from any state ─► waiting
+      no goal fits ▼
+               recentring ─ready─► goal
 
 * the list comes from ``goals_file`` (a scenario YAML: ``goals: [[x, y], ...]``, in the robot
   frame). A goal fits when, placed from the boat's live pose, it is inside ``area_half_size`` of
@@ -22,9 +22,10 @@ Runs a list of goals relative to the boat, keeping them inside a test area.
 * it runs from ``control_button`` to ``teleop_button`` on ``joy``, the presses ``joy_teleop`` turns
   into ``drive_mux/select``. ``teleop_button`` puts the current goal back in the list;
 * ``relative_goal/active`` (std_msgs/Bool, at ``rate``) is true while a goal is running,
-  ``relative_goal/status`` (std_msgs/String, latched) is the state, with why a lead-in waits or the
-  goal's label, and ``relative_goal/markers`` (visualization_msgs/MarkerArray, latched) shows the
-  remaining goals and the selected one, in red, in ``area_frame``.
+  ``relative_goal/status`` (std_msgs/String, latched) is the state's name, or
+  ``goal <index> <distance> <heading>`` (index in the file, m, deg), and ``relative_goal/markers``
+  (visualization_msgs/MarkerArray, latched) shows the remaining goals and the selected one, in red,
+  in ``area_frame``.
 """
 
 from dataclasses import fields
@@ -41,6 +42,7 @@ from rclpy.duration import Duration
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile
+from rclpy.task import Future
 from rclpy.time import Time
 from sensor_msgs.msg import Joy
 from std_msgs.msg import Bool, ColorRGBA, Empty, String
@@ -48,7 +50,7 @@ from tf2_ros import Buffer, TransformException, TransformListener
 from visualization_msgs.msg import Marker, MarkerArray
 import yaml
 
-WAITING = 'waiting for control'
+WAITING = 'waiting'
 LEAD_IN = 'lead-in'
 RECENTRING = 'recentring'
 GOAL = 'goal'
@@ -103,9 +105,10 @@ class RelativeGoal(Node):
 
         with open(goals_file) as f:
             goals = yaml.safe_load(f)['goals']
-        # (N, 2) in the robot frame, not done yet
+        # (N, 2) in the robot frame, not done yet, and their indices in the file
         self._remaining = np.array(goals, dtype=float).reshape(-1, 2)
         self._total = len(self._remaining)
+        self._ids = np.arange(self._total)
         self.get_logger().info(f'{self._total} goals from {goals_file}')
 
         self._state = None
@@ -127,6 +130,8 @@ class RelativeGoal(Node):
         self._label = None
         self._reached = 0
         self._missed = 0
+        # done once all goals are
+        self.finished = Future()
 
         self._tf_buffer = Buffer()
         self._tf_listener = TransformListener(self._tf_buffer, self)
@@ -198,9 +203,7 @@ class RelativeGoal(Node):
         elif now - self._ready_since >= self._settle_time:
             self._start_goal(fits[0], now, error)
             return
-        status = f'{self._state}: {reason or "settling"}'
-        self._set_status(status)
-        self.get_logger().info(status, throttle_duration_sec=5.0)
+        self.get_logger().info(f'{self._state}: {reason or "settling"}', throttle_duration_sec=5.0)
         self._drive(error)
 
     def _start_goal(self, index, now, error):
@@ -212,8 +215,8 @@ class RelativeGoal(Node):
         self._target = from_body(pose, self._remaining[self._current])[0]
         self._start = now
         x, y = self._remaining[self._current]
-        self._label = (f'{self._reached + self._missed + 1}/{self._total} '
-                       f'{hypot(x, y):.1f} m {degrees(atan2(y, x)):.0f} deg')
+        spec = f'{self._ids[self._current]} {hypot(x, y):.2f} {degrees(atan2(y, x)):.1f}'
+        self._label = f'{spec} ({self._reached + self._missed + 1}/{self._total})'
         self.get_logger().info(
             f'Goal {self._label} at ({self._target[0]:.2f}, {self._target[1]:.2f}), '
             f'boat at {twist.linear.x:.2f} m/s, {degrees(twist.angular.z):.1f} deg/s{aligned}')
@@ -223,7 +226,7 @@ class RelativeGoal(Node):
         goal.pose.position.x, goal.pose.position.y = map(float, self._target)
         goal.pose.orientation.w = 1.0
         self._goal_pub.publish(goal)
-        self._set_state(GOAL, self._label)
+        self._set_state(GOAL, f'goal {spec}')
         self._publish_markers()
 
     def _on_goal(self, now):
@@ -239,6 +242,7 @@ class RelativeGoal(Node):
             f'Goal {self._label} {"reached" if reached else "missed"} '
             f'after {elapsed.nanoseconds / 1e9:.1f} s')
         self._remaining = np.delete(self._remaining, self._current, axis=0)
+        self._ids = np.delete(self._ids, self._current)
         self._area_xy = np.delete(self._area_xy, self._current, axis=0)
         self._clear_goal()
         if len(self._remaining):
@@ -250,12 +254,11 @@ class RelativeGoal(Node):
     def _set_state(self, state, status=None):
         """Set the state, and the status: the state's name unless given."""
         self._state = state
-        self._set_status(status or state)
-
-    def _set_status(self, status):
-        if status != self._status:
-            self._status = status
-            self._status_pub.publish(String(data=status))
+        if (status or state) != self._status:
+            self._status = status or state
+            self._status_pub.publish(String(data=self._status))
+        if state == DONE:
+            self.finished.set_result(True)
 
     # Lead-in
 
@@ -325,11 +328,11 @@ class RelativeGoal(Node):
 
 
 def main(args=None):
-    """Spin the relative goal node."""
+    """Spin the relative goal node until all goals are done."""
     rclpy.init(args=args)
     node = RelativeGoal()
     try:
-        rclpy.spin(node)
+        rclpy.spin_until_future_complete(node, node.finished)
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
     finally:
